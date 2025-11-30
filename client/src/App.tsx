@@ -10,6 +10,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 import NotFound from "@/pages/not-found";
 import LoginPage from "@/pages/login";
 import SignupPage from "@/pages/signup";
+import LandingPage from "@/pages/landing";
 
 import CandidateDashboard from "@/pages/candidate/dashboard";
 import PersonalDataPage from "@/pages/candidate/personal-data";
@@ -93,7 +94,7 @@ function AppRouter() {
     );
   }
 
-  if (!user && location !== "/login" && location !== "/signup") {
+  if (!user && location !== "/login" && location !== "/signup" && location !== "/") {
     return <Redirect to="/login" />;
   }
 
@@ -112,6 +113,7 @@ function AppRouter() {
   return (
     <AuthLayout>
       <Switch>
+        <Route path="/" component={LandingPage} />
         <Route path="/login" component={LoginPage} />
         <Route path="/signup" component={SignupPage} />
 
