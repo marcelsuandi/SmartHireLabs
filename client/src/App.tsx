@@ -9,6 +9,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 
 import NotFound from "@/pages/not-found";
 import LoginPage from "@/pages/login";
+import SignupPage from "@/pages/signup";
 
 import CandidateDashboard from "@/pages/candidate/dashboard";
 import PersonalDataPage from "@/pages/candidate/personal-data";
@@ -112,6 +113,7 @@ function AppRouter() {
     <AuthLayout>
       <Switch>
         <Route path="/login" component={LoginPage} />
+        <Route path="/signup" component={SignupPage} />
 
         {/* Candidate Routes */}
         <Route path="/candidate">
