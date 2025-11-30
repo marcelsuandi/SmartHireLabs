@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation, Link } from "wouter";
+import { useLocation } from "wouter";
 import { useAuth } from "@/lib/authContext";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -73,10 +73,16 @@ export default function SignupPage() {
       <div className="w-full max-w-md">
         {/* Logo/Brand */}
         <div className="text-center mb-8">
-          <Link href="/login" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6">
-            <ArrowLeft className="w-4 h-4" />
+          <Button
+            variant="ghost"
+            size="sm"
+            className="mb-6"
+            onClick={() => navigate("/login")}
+            data-testid="button-back-to-login"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Login
-          </Link>
+          </Button>
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary mb-4">
             <Briefcase className="w-8 h-8 text-primary-foreground" />
           </div>
@@ -238,12 +244,17 @@ export default function SignupPage() {
           </CardContent>
         </Card>
 
-        <p className="text-center text-sm text-muted-foreground mt-6">
-          Already have an account?{" "}
-          <Link href="/login" className="text-primary hover:underline font-medium">
+        <div className="text-center text-sm text-muted-foreground mt-6 space-y-2">
+          <p>Already have an account?</p>
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => navigate("/login")}
+            data-testid="button-signin"
+          >
             Sign In
-          </Link>
-        </p>
+          </Button>
+        </div>
       </div>
     </div>
   );

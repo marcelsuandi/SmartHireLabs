@@ -182,14 +182,19 @@ export default function LoginPage() {
           </CardFooter>
         </Card>
 
-        <div className="text-center text-sm text-muted-foreground mt-6 space-y-2">
+        <div className="text-center text-sm text-muted-foreground mt-6 space-y-4">
           <p>Built with care for modern recruitment</p>
-          <p>
-            Don't have an account?{" "}
-            <Link href="/signup" className="text-primary hover:underline font-medium">
-              Sign Up
-            </Link>
-          </p>
+          <div className="flex flex-col gap-2">
+            <p className="text-muted-foreground">Don't have an account?</p>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => navigate("/signup")}
+              data-testid="button-signup-link"
+            >
+              Create New Account
+            </Button>
+          </div>
         </div>
       </div>
     </div>
