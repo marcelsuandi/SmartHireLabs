@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { useAuth } from "@/lib/authContext";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -182,9 +182,15 @@ export default function LoginPage() {
           </CardFooter>
         </Card>
 
-        <p className="text-center text-sm text-muted-foreground mt-6">
-          Built with care for modern recruitment
-        </p>
+        <div className="text-center text-sm text-muted-foreground mt-6 space-y-2">
+          <p>Built with care for modern recruitment</p>
+          <p>
+            Don't have an account?{" "}
+            <Link href="/signup" className="text-primary hover:underline font-medium">
+              Sign Up
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );
