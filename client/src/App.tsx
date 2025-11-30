@@ -93,11 +93,11 @@ function AppRouter() {
     );
   }
 
-  if (!user && location !== "/login") {
+  if (!user && location !== "/login" && location !== "/signup") {
     return <Redirect to="/login" />;
   }
 
-  if (user && location === "/login") {
+  if (user && (location === "/login" || location === "/signup")) {
     const defaultPath = user.role === "candidate" ? "/candidate" : 
                         user.role === "admin" ? "/admin" : "/manager";
     return <Redirect to={defaultPath} />;
