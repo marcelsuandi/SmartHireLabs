@@ -10,7 +10,8 @@ RUN apk add --no-cache python3 make g++
 COPY package*.json ./
 
 # Install dependencies with legacy peer deps flag
-RUN npm ci --legacy-peer-deps
+# Use `npm install` so the build works even when package-lock.json is absent
+RUN npm install --legacy-peer-deps
 
 # Copy the entire project
 COPY . .
@@ -30,7 +31,8 @@ RUN apk add --no-cache dumb-init
 COPY package*.json ./
 
 # Install only production dependencies
-RUN npm ci --only=production --legacy-peer-deps
+# Use `npm install --omit=dev` so we don't require a package-lock.json
+RUN npm install --omit=dev --legacy-peer-deps
 
 # Copy built artifacts from builder
 COPY --from=builder /app/dist ./dist
