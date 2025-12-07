@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5001:5001"
+    environment:
+      - NODE_ENV=production
+      - PORT=5001
+    restart: unless-stopped
+    # Uncomment the following lines if you have a database service
+    # depends_on:
+    #   - db
+    # Add your environment variables here
+    # env_file:
+    #   - .env.production
+
+  # Example database service (uncomment if needed)
+  # db:
+  #   image: postgres:16-alpine
+  #   environment:
+  #     POSTGRES_PASSWORD: example
+  #     POSTGRES_DB: smarthire
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   restart: unless-stopped
+
+# volumes:
+#   postgres_data:
