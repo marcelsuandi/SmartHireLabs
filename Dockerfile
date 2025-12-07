@@ -6,8 +6,8 @@ WORKDIR /app
 # Install build dependencies
 RUN apk add --no-cache python3 make g++
 
-# Copy package files
-COPY package.json package-lock.json ./
+# Copy package files (match package.json and package-lock.json if present)
+COPY package*.json ./
 
 # Install dependencies with legacy peer deps flag
 RUN npm ci --legacy-peer-deps
@@ -26,8 +26,8 @@ WORKDIR /app
 # Install dumb-init to handle signals properly
 RUN apk add --no-cache dumb-init
 
-# Copy package files
-COPY package.json package-lock.json ./
+# Copy package files (match package.json and package-lock.json if present)
+COPY package*.json ./
 
 # Install only production dependencies
 RUN npm ci --only=production --legacy-peer-deps
