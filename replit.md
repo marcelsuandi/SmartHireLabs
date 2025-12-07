@@ -58,7 +58,7 @@ Preferred communication style: Simple, everyday language.
 - CRUD methods defined in storage interface: getUser, getUserByUsername, createUser, etc.
 
 **Authentication & Authorization**
-- Role-based access control (RBAC) with three roles: candidate, admin, manager
+- Role-based access control (RBAC) with three roles: candidate, admin, client
 - Session-based authentication with localStorage persistence on client
 - Protected routes using custom ProtectedRoute component with role validation
 - Demo accounts for testing different user roles

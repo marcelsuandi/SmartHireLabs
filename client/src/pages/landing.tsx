@@ -161,7 +161,7 @@ export default function LandingPage() {
                 <p className="text-sm text-muted-foreground">Find your dream job and apply with your complete profile</p>
               </div>
               <div className="bg-card rounded-lg p-4 border">
-                <div className="text-sm font-semibold text-primary mb-2">For Managers</div>
+                <div className="text-sm font-semibold text-primary mb-2">For Clients</div>
                 <p className="text-sm text-muted-foreground">Review candidates and make informed hiring decisions</p>
               </div>
               <div className="bg-card rounded-lg p-4 border">

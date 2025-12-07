@@ -25,8 +25,8 @@ import AdminCandidatesPage from "@/pages/admin/candidates";
 import AdminSettingsPage from "@/pages/admin/settings";
 import JobFormPage from "@/pages/admin/job-form";
 
-import ManagerDashboard from "@/pages/manager/dashboard";
-import ManagerCandidatesPage from "@/pages/manager/candidates";
+import ClientDashboard from "@/pages/client/dashboard";
+import ClientCandidatesPage from "@/pages/client/candidates";
 
 function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: string[] }) {
   const { user, isLoading } = useAuth();
@@ -46,7 +46,7 @@ function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode;
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     const defaultPath = user.role === "candidate" ? "/candidate" : 
-                        user.role === "admin" ? "/admin" : "/manager";
+                        user.role === "admin" ? "/admin" : "/client";
     return <Redirect to={defaultPath} />;
   }
 
@@ -100,13 +100,13 @@ function AppRouter() {
 
   if (user && (location === "/login" || location === "/signup")) {
     const defaultPath = user.role === "candidate" ? "/candidate" : 
-                        user.role === "admin" ? "/admin" : "/manager";
+                        user.role === "admin" ? "/admin" : "/client";
     return <Redirect to={defaultPath} />;
   }
 
   if (user && location === "/") {
     const defaultPath = user.role === "candidate" ? "/candidate" : 
-                        user.role === "admin" ? "/admin" : "/manager";
+                        user.role === "admin" ? "/admin" : "/client";
     return <Redirect to={defaultPath} />;
   }
 
@@ -176,15 +176,15 @@ function AppRouter() {
           </ProtectedRoute>
         </Route>
 
-        {/* Manager Routes */}
-        <Route path="/manager">
-          <ProtectedRoute allowedRoles={["manager"]}>
-            <ManagerDashboard />
+        {/* Client Routes */}
+        <Route path="/client">
+          <ProtectedRoute allowedRoles={["client"]}>
+            <ClientDashboard />
           </ProtectedRoute>
         </Route>
-        <Route path="/manager/candidates">
-          <ProtectedRoute allowedRoles={["manager"]}>
-            <ManagerCandidatesPage />
+        <Route path="/client/candidates">
+          <ProtectedRoute allowedRoles={["client"]}>
+            <ClientCandidatesPage />
           </ProtectedRoute>
         </Route>
 

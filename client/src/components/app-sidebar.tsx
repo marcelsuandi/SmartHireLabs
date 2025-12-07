@@ -45,9 +45,9 @@ const adminMenu = [
   { title: "Settings", url: "/admin/settings/users", icon: Settings }
 ];
 
-const managerMenu = [
-  { title: "Dashboard", url: "/manager", icon: LayoutDashboard },
-  { title: "Candidates", url: "/manager/candidates", icon: Users }
+const clientMenu = [
+  { title: "Dashboard", url: "/client", icon: LayoutDashboard },
+  { title: "Candidates", url: "/client/candidates", icon: Users }
 ];
 
 export function AppSidebar() {
@@ -62,8 +62,8 @@ export function AppSidebar() {
         return candidateMenu;
       case "admin":
         return adminMenu;
-      case "manager":
-        return managerMenu;
+      case "client":
+        return clientMenu;
       default:
         return [];
     }
@@ -77,7 +77,7 @@ export function AppSidebar() {
         return "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300";
       case "admin":
         return "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300";
-      case "manager":
+      case "client":
         return "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300";
       default:
         return "";

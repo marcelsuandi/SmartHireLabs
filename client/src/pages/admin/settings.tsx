@@ -202,7 +202,7 @@ function UsersTab() {
                       <SelectContent>
                         <SelectItem value="candidate">Candidate</SelectItem>
                         <SelectItem value="admin">Admin</SelectItem>
-                        <SelectItem value="manager">Manager</SelectItem>
+                        <SelectItem value="client">Client</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />

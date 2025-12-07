@@ -34,12 +34,12 @@ export const demoUsers: User[] = [
     role: "admin"
   },
   {
-    id: "user-manager-1",
-    email: "manager@smarthire.com",
+    id: "user-client-1",
+    email: "client@smarthire.com",
     password: "password123",
-    fullName: "Manager User",
+    fullName: "Client User",
     phone: "+1234567892",
-    role: "manager"
+    role: "client"
   },
   {
     id: "user-candidate-2",
@@ -357,8 +357,8 @@ export const demoApplicationHistory: ApplicationHistory[] = [
     applicationId: "app-4",
     status: "Rejected",
     timestamp: "2024-10-05T15:00:00Z",
-    actor: "Manager User",
-    actorRole: "manager"
+    actor: "Client User",
+    actorRole: "client"
   }
 ];
 

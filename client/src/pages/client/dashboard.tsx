@@ -18,7 +18,7 @@ import {
 import { statusColors } from "@/lib/mockData";
 import type { ApplicationWithDetails, ApplicationStatus } from "@shared/schema";
 
-export default function ManagerDashboard() {
+export default function ClientDashboard() {
   const [applications, setApplications] = useState<ApplicationWithDetails[]>([]);
   const [stats, setStats] = useState<{
     total: number;
@@ -112,12 +112,12 @@ export default function ManagerDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold mb-2">Manager Dashboard</h1>
+          <h1 className="text-2xl font-bold mb-2">Client Dashboard</h1>
           <p className="text-muted-foreground">
             Review and make final hiring decisions
           </p>
         </div>
-        <Link href="/manager/candidates">
+        <Link href="/client/candidates">
           <Button data-testid="button-review-candidates">
             Review Candidates
             <ArrowRight className="w-4 h-4 ml-2" />
@@ -183,7 +183,7 @@ export default function ManagerDashboard() {
       <Card className="mt-6">
         <CardHeader className="flex flex-row items-center justify-between gap-2">
           <CardTitle>Awaiting Your Decision</CardTitle>
-          <Link href="/manager/candidates">
+          <Link href="/client/candidates">
             <Button variant="ghost" size="sm" className="gap-1">
               View All
               <ArrowRight className="w-4 h-4" />

@@ -529,7 +529,7 @@ export const applicationsApi = {
     applicationId: string, 
     status: ApplicationStatus, 
     actorName: string, 
-    actorRole: "admin" | "manager"
+    actorRole: "admin" | "client"
   ): Promise<Application | undefined> => {
     await delay(200);
     const index = applications.findIndex(a => a.id === applicationId);

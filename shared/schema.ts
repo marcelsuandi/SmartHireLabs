@@ -4,7 +4,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // User roles
-export type UserRole = "candidate" | "admin" | "manager";
+export type UserRole = "candidate" | "admin" | "client";
 
 // Application statuses
 export type ApplicationStatus = "Applied" | "Processing" | "Passed Selection" | "Accepted" | "Rejected";

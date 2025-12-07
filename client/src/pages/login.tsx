@@ -56,7 +56,7 @@ export default function LoginPage() {
   const demoAccounts = [
     { email: "candidate@smarthire.com", password: "password123", role: "Candidate" },
     { email: "admin@smarthire.com", password: "password123", role: "Admin" },
-    { email: "manager@smarthire.com", password: "password123", role: "Manager" }
+    { email: "client@smarthire.com", password: "password123", role: "Client" }
   ];
 
   const handleDemoLogin = (email: string, password: string) => {

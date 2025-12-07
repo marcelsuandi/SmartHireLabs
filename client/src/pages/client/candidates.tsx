@@ -35,7 +35,7 @@ import {
 import { statusColors } from "@/lib/mockData";
 import type { ApplicationWithDetails, ApplicationStatus, CandidateWithDetails } from "@shared/schema";
 
-export default function ManagerCandidatesPage() {
+export default function ClientCandidatesPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [applications, setApplications] = useState<ApplicationWithDetails[]>([]);
@@ -70,7 +70,7 @@ export default function ManagerCandidatesPage() {
     
     setIsUpdating(true);
     try {
-      await applicationsApi.updateStatus(appId, newStatus, user.fullName, "manager");
+      await applicationsApi.updateStatus(appId, newStatus, user.fullName, "client");
       await loadData();
       
       if (selectedApp?.id === appId) {
