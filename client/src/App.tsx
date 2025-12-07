@@ -10,8 +10,6 @@ import { AppSidebar } from "@/components/app-sidebar";
 import NotFound from "@/pages/not-found";
 import LoginPage from "@/pages/login";
 import SignupPage from "@/pages/signup";
-import LandingPage from "@/pages/landing";
-
 import CandidateDashboard from "@/pages/candidate/dashboard";
 import PersonalDataPage from "@/pages/candidate/personal-data";
 import EducationPage from "@/pages/candidate/education";
@@ -94,17 +92,11 @@ function AppRouter() {
     );
   }
 
-  if (!user && location !== "/login" && location !== "/signup" && location !== "/") {
+  if (!user && location !== "/login" && location !== "/signup") {
     return <Redirect to="/login" />;
   }
 
-  if (user && (location === "/login" || location === "/signup")) {
-    const defaultPath = user.role === "candidate" ? "/candidate" : 
-                        user.role === "admin" ? "/admin" : "/client";
-    return <Redirect to={defaultPath} />;
-  }
-
-  if (user && location === "/") {
+  if (user && (location === "/login" || location === "/signup" || location === "/")) {
     const defaultPath = user.role === "candidate" ? "/candidate" : 
                         user.role === "admin" ? "/admin" : "/client";
     return <Redirect to={defaultPath} />;
@@ -113,7 +105,9 @@ function AppRouter() {
   return (
     <AuthLayout>
       <Switch>
-        <Route path="/" component={LandingPage} />
+        <Route path="/">
+          <Redirect to="/login" />
+        </Route>
         <Route path="/login" component={LoginPage} />
         <Route path="/signup" component={SignupPage} />
 
