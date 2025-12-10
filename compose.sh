@@ -20,7 +20,7 @@ case "${1:-help}" in
     ;;
   up)
     compose up -d
-    echo "Application running at: http://localhost:5001"
+    echo "Application running at: http://127.0.0.1:5001"
     ;;
   down)
     compose down

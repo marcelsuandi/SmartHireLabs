@@ -33,7 +33,7 @@ case "${1:-help}" in
     echo "Starting container..."
     docker-compose up -d
     echo ""
-    echo "Application running at: http://localhost:5001"
+    echo "Application running at: http://127.0.0.1:5001"
     ;;
   down)
     echo "Stopping container..."
