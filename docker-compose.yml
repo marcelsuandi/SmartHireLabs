@@ -10,7 +10,10 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=5001
+      - DATABASE_URL=${DATABASE_URL}
     restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     # Uncomment the following lines if you have a database service
     # depends_on:
     #   - db

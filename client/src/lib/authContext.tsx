@@ -26,39 +26,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string): Promise<void> => {
-    const foundUser = demoUsers.find(
-      u => u.email.toLowerCase() === email.toLowerCase() && u.password === password
-    );
-
-    if (!foundUser) {
-      throw new Error("Invalid email or password");
+    const resp = await fetch("/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
+    if (!resp.ok) {
+      const data = await resp.json().catch(() => ({ message: "Login failed" }));
+      throw new Error(data.message || "Login failed");
     }
-
-    const userWithoutPassword = { ...foundUser, password: "" };
-    setUser(userWithoutPassword);
-    localStorage.setItem("smarthire_user", JSON.stringify(userWithoutPassword));
+    const { user: safeUser } = await resp.json();
+    setUser(safeUser);
+    localStorage.setItem("smarthire_user", JSON.stringify(safeUser));
   };
 
   const register = async (data: { fullName: string; email: string; password: string; phone: string }): Promise<void> => {
-    const exists = demoUsers.find(u => u.email.toLowerCase() === data.email.toLowerCase());
-    
-    if (exists) {
-      throw new Error("Email already registered");
+    const resp = await fetch("/api/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    });
+    if (!resp.ok) {
+      const body = await resp.json().catch(() => ({ message: "Registration failed" }));
+      throw new Error(body.message || "Registration failed");
     }
-
-    const newUser: User = {
-      id: `user-${Date.now()}`,
-      email: data.email,
-      password: data.password,
-      fullName: data.fullName,
-      phone: data.phone,
-      role: "candidate"
-    };
-
-    demoUsers.push(newUser);
-    const userWithoutPassword = { ...newUser, password: "" };
-    setUser(userWithoutPassword);
-    localStorage.setItem("smarthire_user", JSON.stringify(userWithoutPassword));
+    const { user: safeUser } = await resp.json();
+    setUser(safeUser);
+    localStorage.setItem("smarthire_user", JSON.stringify(safeUser));
   };
 
   const logout = () => {
