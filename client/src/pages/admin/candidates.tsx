@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/authContext";
-import { applicationsApi, getCandidateDetails } from "@/lib/mockApi";
+import { applicationsApi, getCandidateDetails, jobsApi } from "@/lib/mockApi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Progress } from "@/components/ui/progress";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { 
   Table, 
   TableBody, 
@@ -24,7 +26,6 @@ import {
   Filter,
   Eye,
   User,
-  Mail,
   Phone,
   FileText,
   GraduationCap,
@@ -32,21 +33,28 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  AlertCircle,
-  Loader2
+  Loader2,
+  Target,
+  Briefcase,
+  BookOpen,
+  Sparkles
 } from "lucide-react";
 import { statusColors } from "@/lib/mockData";
-import type { ApplicationWithDetails, ApplicationStatus, CandidateWithDetails } from "@shared/schema";
+import { findBestJobMatch, getAllJobMatches, type MatchResult } from "@/lib/matchingAlgorithm";
+import type { ApplicationWithDetails, ApplicationStatus, CandidateWithDetails, JobWithDetails } from "@shared/schema";
 
 export default function AdminCandidatesPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [applications, setApplications] = useState<ApplicationWithDetails[]>([]);
+  const [allJobs, setAllJobs] = useState<JobWithDetails[]>([]);
+  const [candidateMatches, setCandidateMatches] = useState<Map<string, MatchResult | null>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedApp, setSelectedApp] = useState<ApplicationWithDetails | null>(null);
   const [candidateDetails, setCandidateDetails] = useState<CandidateWithDetails | null>(null);
+  const [candidateJobMatches, setCandidateJobMatches] = useState<MatchResult[]>([]);
   const [isUpdating, setIsUpdating] = useState(false);
   const [confirmAction, setConfirmAction] = useState<{ status: ApplicationStatus; appId: string } | null>(null);
 
@@ -55,8 +63,21 @@ export default function AdminCandidatesPage() {
   }, []);
 
   const loadData = async () => {
-    const apps = await applicationsApi.getAll();
+    const [apps, jobs] = await Promise.all([
+      applicationsApi.getAll(),
+      jobsApi.getActive()
+    ]);
     setApplications(apps);
+    setAllJobs(jobs);
+    
+    const matches = new Map<string, MatchResult | null>();
+    for (const app of apps) {
+      if (app.candidate) {
+        const bestMatch = findBestJobMatch(app.candidate, jobs);
+        matches.set(app.userId, bestMatch);
+      }
+    }
+    setCandidateMatches(matches);
     setIsLoading(false);
   };
 
@@ -65,6 +86,11 @@ export default function AdminCandidatesPage() {
     if (app.userId) {
       const details = await getCandidateDetails(app.userId);
       setCandidateDetails(details || null);
+      
+      if (details) {
+        const allMatches = getAllJobMatches(details, allJobs);
+        setCandidateJobMatches(allMatches);
+      }
     }
   };
 
@@ -76,7 +102,6 @@ export default function AdminCandidatesPage() {
       await applicationsApi.updateStatus(appId, newStatus, user.fullName, "admin");
       await loadData();
       
-      // Update selected app if it's the one being updated
       if (selectedApp?.id === appId) {
         const updated = applications.find(a => a.id === appId);
         if (updated) {
@@ -130,6 +155,18 @@ export default function AdminCandidatesPage() {
     return actions;
   };
 
+  const getMatchScoreColor = (score: number) => {
+    if (score >= 75) return "text-green-600 dark:text-green-400";
+    if (score >= 50) return "text-yellow-600 dark:text-yellow-400";
+    return "text-red-600 dark:text-red-400";
+  };
+
+  const getMatchBadgeVariant = (score: number): "default" | "secondary" | "destructive" => {
+    if (score >= 75) return "default";
+    if (score >= 50) return "secondary";
+    return "destructive";
+  };
+
   if (isLoading) {
     return (
       <div className="p-6">
@@ -150,7 +187,7 @@ export default function AdminCandidatesPage() {
       <div className="mb-8">
         <h1 className="text-2xl font-bold mb-2">Candidate Management</h1>
         <p className="text-muted-foreground">
-          Review and manage job applications
+          Review and manage job applications with ML-powered matching
         </p>
       </div>
 
@@ -198,8 +235,13 @@ export default function AdminCandidatesPage() {
                   <TableHead>Job Title</TableHead>
                   <TableHead>Candidate Name</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Phone</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>
+                    <div className="flex items-center gap-1">
+                      <Sparkles className="w-4 h-4" />
+                      Best Match
+                    </div>
+                  </TableHead>
                   <TableHead>Applied Date</TableHead>
                   <TableHead className="text-right">Action</TableHead>
                 </TableRow>
@@ -212,32 +254,88 @@ export default function AdminCandidatesPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredApplications.map((app, index) => (
-                    <TableRow key={app.id} data-testid={`row-candidate-${app.id}`}>
-                      <TableCell className="font-medium">{index + 1}</TableCell>
-                      <TableCell>{app.job?.title || "N/A"}</TableCell>
-                      <TableCell>{app.candidate?.fullName || "N/A"}</TableCell>
-                      <TableCell>{app.candidate?.email || "N/A"}</TableCell>
-                      <TableCell>{app.candidate?.phone || "N/A"}</TableCell>
-                      <TableCell>
-                        <Badge className={`${statusColors[app.status].bg} ${statusColors[app.status].text}`}>
-                          {app.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{formatDate(app.appliedAt)}</TableCell>
-                      <TableCell className="text-right">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleViewDetails(app)}
-                          data-testid={`button-view-${app.id}`}
-                        >
-                          <Eye className="w-4 h-4 mr-1" />
-                          Details
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  filteredApplications.map((app, index) => {
+                    const bestMatch = candidateMatches.get(app.userId);
+                    return (
+                      <TableRow key={app.id} data-testid={`row-candidate-${app.id}`}>
+                        <TableCell className="font-medium">{index + 1}</TableCell>
+                        <TableCell>{app.job?.title || "N/A"}</TableCell>
+                        <TableCell>{app.candidate?.fullName || "N/A"}</TableCell>
+                        <TableCell>{app.candidate?.email || "N/A"}</TableCell>
+                        <TableCell>
+                          <Badge className={`${statusColors[app.status].bg} ${statusColors[app.status].text}`}>
+                            {app.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {bestMatch ? (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="flex flex-col gap-1 cursor-help">
+                                  <div className="flex items-center gap-2">
+                                    <Badge 
+                                      variant={getMatchBadgeVariant(bestMatch.matchScore)}
+                                      className="gap-1"
+                                      data-testid={`match-score-${app.id}`}
+                                    >
+                                      <Target className="w-3 h-3" />
+                                      {bestMatch.matchScore}%
+                                    </Badge>
+                                    {bestMatch.isGoodFit && (
+                                      <CheckCircle className="w-4 h-4 text-green-500" />
+                                    )}
+                                  </div>
+                                  <span className="text-xs text-muted-foreground truncate max-w-[150px]">
+                                    {bestMatch.jobTitle}
+                                  </span>
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs">
+                                <div className="space-y-2">
+                                  <p className="font-semibold">Best Match: {bestMatch.jobTitle}</p>
+                                  <div className="space-y-1 text-xs">
+                                    <div className="flex justify-between">
+                                      <span>Education:</span>
+                                      <span>{bestMatch.breakdown.educationScore}%</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span>Skills:</span>
+                                      <span>{bestMatch.breakdown.skillsScore}%</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span>Experience:</span>
+                                      <span>{bestMatch.breakdown.experienceScore}%</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span>Training:</span>
+                                      <span>{bestMatch.breakdown.trainingScore}%</span>
+                                    </div>
+                                  </div>
+                                  {bestMatch.isGoodFit && (
+                                    <p className="text-green-500 font-medium">Good Fit!</p>
+                                  )}
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">No data</span>
+                          )}
+                        </TableCell>
+                        <TableCell>{formatDate(app.appliedAt)}</TableCell>
+                        <TableCell className="text-right">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleViewDetails(app)}
+                            data-testid={`button-view-${app.id}`}
+                          >
+                            <Eye className="w-4 h-4 mr-1" />
+                            Details
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>
@@ -246,8 +344,8 @@ export default function AdminCandidatesPage() {
       </Card>
 
       {/* Candidate Detail Dialog */}
-      <Dialog open={!!selectedApp} onOpenChange={() => { setSelectedApp(null); setCandidateDetails(null); }}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <Dialog open={!!selectedApp} onOpenChange={() => { setSelectedApp(null); setCandidateDetails(null); setCandidateJobMatches([]); }}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
           {selectedApp && (
             <>
               <DialogHeader>
@@ -265,6 +363,7 @@ export default function AdminCandidatesPage() {
                       <TabsTrigger value="profile" className="flex-1">Profile</TabsTrigger>
                       <TabsTrigger value="education" className="flex-1">Education</TabsTrigger>
                       <TabsTrigger value="skills" className="flex-1">Skills</TabsTrigger>
+                      <TabsTrigger value="matching" className="flex-1">Matching</TabsTrigger>
                     </TabsList>
                     
                     <TabsContent value="profile" className="mt-4 space-y-4">
@@ -323,7 +422,7 @@ export default function AdminCandidatesPage() {
                                     <p className="font-medium">{edu.level}</p>
                                     <p className="text-sm text-muted-foreground">{edu.schoolName}</p>
                                     <p className="text-sm text-muted-foreground">
-                                      {edu.major} • {edu.yearStart} - {edu.yearEnd || "Present"}
+                                      {edu.major} {edu.yearStart && `(${edu.yearStart} - ${edu.yearEnd || "Present"})`}
                                     </p>
                                   </div>
                                 </div>
@@ -331,6 +430,30 @@ export default function AdminCandidatesPage() {
                             </div>
                           ) : (
                             <p className="text-muted-foreground text-center py-4">No education records</p>
+                          )}
+                          
+                          {/* Experience Section */}
+                          {candidateDetails?.experience && candidateDetails.experience.length > 0 && (
+                            <div className="mt-6 pt-4 border-t">
+                              <h4 className="font-medium mb-3 flex items-center gap-2">
+                                <Briefcase className="w-4 h-4" />
+                                Work Experience
+                              </h4>
+                              <div className="space-y-4">
+                                {candidateDetails.experience.map((exp) => (
+                                  <div key={exp.id} className="flex gap-3">
+                                    <div className="w-2 h-2 bg-primary rounded-full mt-2 shrink-0" />
+                                    <div>
+                                      <p className="font-medium">{exp.position}</p>
+                                      <p className="text-sm text-muted-foreground">{exp.companyName}</p>
+                                      <p className="text-sm text-muted-foreground">
+                                        {exp.yearStart && `${exp.yearStart} - ${exp.yearEnd || "Present"}`}
+                                      </p>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
                           )}
                         </CardContent>
                       </Card>
@@ -340,15 +463,118 @@ export default function AdminCandidatesPage() {
                       <Card>
                         <CardContent className="p-4">
                           {candidateDetails?.skills && candidateDetails.skills.length > 0 ? (
-                            <div className="flex flex-wrap gap-2">
-                              {candidateDetails.skills.map((skill) => (
-                                <Badge key={skill.id} variant="secondary">
-                                  {skill.skillName} ({skill.proficiencyLevel})
-                                </Badge>
-                              ))}
+                            <div className="space-y-4">
+                              <div>
+                                <h4 className="font-medium mb-2 flex items-center gap-2">
+                                  <Award className="w-4 h-4" />
+                                  Technical Skills
+                                </h4>
+                                <div className="flex flex-wrap gap-2">
+                                  {candidateDetails.skills.map((skill) => (
+                                    <Badge key={skill.id} variant="secondary">
+                                      {skill.skillName} ({skill.proficiencyLevel})
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
                             </div>
                           ) : (
                             <p className="text-muted-foreground text-center py-4">No skills listed</p>
+                          )}
+                          
+                          {/* Training Section */}
+                          {candidateDetails?.trainings && candidateDetails.trainings.length > 0 && (
+                            <div className="mt-6 pt-4 border-t">
+                              <h4 className="font-medium mb-3 flex items-center gap-2">
+                                <BookOpen className="w-4 h-4" />
+                                Training & Certifications
+                              </h4>
+                              <div className="space-y-2">
+                                {candidateDetails.trainings.map((training) => (
+                                  <div key={training.id} className="flex items-center justify-between p-2 bg-accent/50 rounded">
+                                    <div>
+                                      <p className="font-medium text-sm">{training.title}</p>
+                                      <p className="text-xs text-muted-foreground">
+                                        {training.organizer} {training.year && `(${training.year})`}
+                                      </p>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </TabsContent>
+                    
+                    {/* ML Matching Tab */}
+                    <TabsContent value="matching" className="mt-4">
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-base flex items-center gap-2">
+                            <Sparkles className="w-4 h-4" />
+                            ML Job Matching Analysis
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-4">
+                          {candidateJobMatches.length > 0 ? (
+                            <div className="space-y-4">
+                              {candidateJobMatches.slice(0, 5).map((match, idx) => (
+                                <div 
+                                  key={match.jobId} 
+                                  className={`p-3 rounded-lg border ${idx === 0 ? "border-primary bg-primary/5" : ""}`}
+                                  data-testid={`job-match-${match.jobId}`}
+                                >
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-2">
+                                      {idx === 0 && <Badge variant="default">Best Match</Badge>}
+                                      <span className="font-medium">{match.jobTitle}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <span className={`font-bold ${getMatchScoreColor(match.matchScore)}`}>
+                                        {match.matchScore}%
+                                      </span>
+                                      {match.isGoodFit && (
+                                        <Badge variant="default" className="bg-green-500">
+                                          Good Fit
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <Progress value={match.matchScore} className="h-2 mb-3" />
+                                  <div className="grid grid-cols-2 gap-2 text-xs">
+                                    <div className="flex justify-between">
+                                      <span className="text-muted-foreground">Education:</span>
+                                      <span className={getMatchScoreColor(match.breakdown.educationScore)}>
+                                        {match.breakdown.educationScore}%
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span className="text-muted-foreground">Skills:</span>
+                                      <span className={getMatchScoreColor(match.breakdown.skillsScore)}>
+                                        {match.breakdown.skillsScore}%
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span className="text-muted-foreground">Experience:</span>
+                                      <span className={getMatchScoreColor(match.breakdown.experienceScore)}>
+                                        {match.breakdown.experienceScore}%
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span className="text-muted-foreground">Training:</span>
+                                      <span className={getMatchScoreColor(match.breakdown.trainingScore)}>
+                                        {match.breakdown.trainingScore}%
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-muted-foreground text-center py-4">
+                              No matching data available
+                            </p>
                           )}
                         </CardContent>
                       </Card>
