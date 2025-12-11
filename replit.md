@@ -71,7 +71,6 @@ Preferred communication style: Simple, everyday language.
 - Education Records: Academic history with level, institution, field, dates
 - Experience Records: Work history with company, position, dates, description
 - Skills & Training: Professional skills and certifications
-- Languages: Language proficiencies
 - Jobs: Job postings with department, position, requirements, salary range
 - Applications: Job applications linking candidates to jobs with status tracking
 - Application History: Audit trail of status changes with timestamps and notes
@@ -83,10 +82,17 @@ Preferred communication style: Simple, everyday language.
 
 **Relationships**
 - One-to-One: User to CandidateProfile
-- One-to-Many: User to Education/Experience/Skills/Training/Languages
+- One-to-Many: User to Education/Experience/Skills/Training
 - One-to-Many: Job to Applications
 - Many-to-One: Applications to User (candidate)
 - Many-to-Many: Jobs and Candidates (through Applications)
+
+**ML-Based Candidate Matching**
+- Matching algorithm in `client/src/lib/matchingAlgorithm.ts`
+- Weighted scoring: Education (25%), Skills (35%), Experience (25%), Training (15%)
+- Match scores above 75% flagged as "Good Fit"
+- Admin Candidates panel shows "Best Match" column with best-suited job for each candidate
+- Tooltip breakdown shows individual scores for each category
 
 ## External Dependencies
 
