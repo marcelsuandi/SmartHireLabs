@@ -19,80 +19,80 @@ import type {
 export const demoUsers: User[] = [
   {
     id: "user-candidate-1",
-    email: "candidate1@smarthire.com",
-    password: "candidate123",
+    email: "candidate@smarthire.com",
+    password: "password123",
     fullName: "John Doe",
     phone: "+1234567890",
     role: "candidate"
   },
   {
     id: "user-candidate-2",
-    email: "candidate2@smarthire.com",
-    password: "candidate123",
+    email: "jane.smith@email.com",
+    password: "password123",
     fullName: "Jane Smith",
     phone: "+1987654321",
     role: "candidate"
   },
   {
     id: "user-candidate-3",
-    email: "candidate3@smarthire.com",
-    password: "candidate123",
+    email: "bob.johnson@email.com",
+    password: "password123",
     fullName: "Bob Johnson",
     phone: "+1555555555",
     role: "candidate"
   },
   {
     id: "user-candidate-4",
-    email: "candidate4@smarthire.com",
-    password: "candidate123",
+    email: "alice.williams@email.com",
+    password: "password123",
     fullName: "Alice Williams",
     phone: "+1666666666",
     role: "candidate"
   },
   {
     id: "user-candidate-5",
-    email: "candidate5@smarthire.com",
-    password: "candidate123",
+    email: "michael.brown@email.com",
+    password: "password123",
     fullName: "Michael Brown",
     phone: "+1777777777",
     role: "candidate"
   },
   {
     id: "user-candidate-6",
-    email: "candidate6@smarthire.com",
-    password: "candidate123",
+    email: "emily.davis@email.com",
+    password: "password123",
     fullName: "Emily Davis",
     phone: "+1888888888",
     role: "candidate"
   },
   {
     id: "user-candidate-7",
-    email: "candidate7@smarthire.com",
-    password: "candidate123",
+    email: "david.wilson@email.com",
+    password: "password123",
     fullName: "David Wilson",
     phone: "+1999999999",
     role: "candidate"
   },
   {
     id: "user-candidate-8",
-    email: "candidate8@smarthire.com",
-    password: "candidate123",
+    email: "sarah.martinez@email.com",
+    password: "password123",
     fullName: "Sarah Martinez",
     phone: "+1444444444",
     role: "candidate"
   },
   {
     id: "user-candidate-9",
-    email: "candidate9@smarthire.com",
-    password: "candidate123",
+    email: "james.anderson@email.com",
+    password: "password123",
     fullName: "James Anderson",
     phone: "+1333333333",
     role: "candidate"
   },
   {
     id: "user-candidate-10",
-    email: "candidate10@smarthire.com",
-    password: "candidate123",
+    email: "lisa.taylor@email.com",
+    password: "password123",
     fullName: "Lisa Taylor",
     phone: "+1222222222",
     role: "candidate"
@@ -100,7 +100,7 @@ export const demoUsers: User[] = [
   {
     id: "user-admin-1",
     email: "admin@smarthire.com",
-    password: "admin123",
+    password: "password123",
     fullName: "Admin User",
     phone: "+1234567891",
     role: "admin"
@@ -108,7 +108,7 @@ export const demoUsers: User[] = [
   {
     id: "user-client-1",
     email: "client@smarthire.com",
-    password: "client123",
+    password: "password123",
     fullName: "Client User",
     phone: "+1234567892",
     role: "client"
