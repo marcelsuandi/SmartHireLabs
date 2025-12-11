@@ -203,13 +203,13 @@ export interface CandidateWithDetails extends User {
   languages?: Language[];
 }
 
-export interface ApplicationWithDetails extends Application {
-  job?: Job;
-  candidate?: CandidateWithDetails;
-  history?: ApplicationHistory[];
-}
-
 export interface JobWithDetails extends Job {
   department?: Department;
   position?: Position;
+}
+
+export interface ApplicationWithDetails extends Application {
+  job?: JobWithDetails;
+  candidate?: CandidateWithDetails;
+  history?: ApplicationHistory[];
 }

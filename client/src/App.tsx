@@ -15,8 +15,7 @@ import PersonalDataPage from "@/pages/candidate/personal-data";
 import EducationPage from "@/pages/candidate/education";
 import ExperiencePage from "@/pages/candidate/experience";
 import SkillsPage from "@/pages/candidate/skills";
-import SearchJobsPage from "@/pages/candidate/search-jobs";
-import MyApplicationsPage from "@/pages/candidate/my-applications";
+import ApplicationStatusPage from "@/pages/candidate/application-status";
 
 import AdminDashboard from "@/pages/admin/dashboard";
 import AdminCandidatesPage from "@/pages/admin/candidates";
@@ -137,14 +136,9 @@ function AppRouter() {
             <SkillsPage />
           </ProtectedRoute>
         </Route>
-        <Route path="/candidate/search-jobs">
+        <Route path="/candidate/application-status">
           <ProtectedRoute allowedRoles={["candidate"]}>
-            <SearchJobsPage />
-          </ProtectedRoute>
-        </Route>
-        <Route path="/candidate/my-applications">
-          <ProtectedRoute allowedRoles={["candidate"]}>
-            <MyApplicationsPage />
+            <ApplicationStatusPage />
           </ProtectedRoute>
         </Route>
 

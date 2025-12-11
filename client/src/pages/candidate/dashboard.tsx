@@ -1,95 +1,121 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/authContext";
-import { applicationsApi } from "@/lib/mockApi";
+import { applicationsApi, profileApi, educationApi, experienceApi, skillsApi, trainingsApi } from "@/lib/mockApi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
 import { Chatbot } from "@/components/chatbot";
 import { 
   FileText, 
-  Clock, 
   CheckCircle, 
-  XCircle, 
   ArrowRight,
-  MessageSquare
+  MessageSquare,
+  User,
+  GraduationCap,
+  Briefcase,
+  Award,
+  Clock,
+  Check
 } from "lucide-react";
 import { Link } from "wouter";
 import { statusColors } from "@/lib/mockData";
 import type { ApplicationWithDetails, ApplicationStatus } from "@shared/schema";
 
+interface ProfileProgress {
+  personalData: boolean;
+  education: boolean;
+  experience: boolean;
+  skills: boolean;
+  training: boolean;
+}
+
 export default function CandidateDashboard() {
   const { user } = useAuth();
   const [applications, setApplications] = useState<ApplicationWithDetails[]>([]);
+  const [profileProgress, setProfileProgress] = useState<ProfileProgress>({
+    personalData: false,
+    education: false,
+    experience: false,
+    skills: false,
+    training: false
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [showChatbot, setShowChatbot] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
       if (user) {
-        const apps = await applicationsApi.getByUserId(user.id);
+        const [apps, profile, education, experience, skills, trainings] = await Promise.all([
+          applicationsApi.getByUserId(user.id),
+          profileApi.getByUserId(user.id),
+          educationApi.getByUserId(user.id),
+          experienceApi.getByUserId(user.id),
+          skillsApi.getByUserId(user.id),
+          trainingsApi.getByUserId(user.id)
+        ]);
         setApplications(apps);
+        setProfileProgress({
+          personalData: !!profile,
+          education: education.length > 0,
+          experience: experience.length > 0,
+          skills: skills.length > 0,
+          training: trainings.length > 0
+        });
       }
       setIsLoading(false);
     };
     loadData();
   }, [user]);
 
-  const getStatusCounts = () => {
-    const counts: Record<string, number> = {
-      total: applications.length,
-      pending: 0,
-      inProgress: 0,
-      accepted: 0,
-      rejected: 0
-    };
-
-    applications.forEach((app) => {
-      if (app.status === "Applied") counts.pending++;
-      else if (app.status === "Processing" || app.status === "Passed Selection") counts.inProgress++;
-      else if (app.status === "Accepted") counts.accepted++;
-      else if (app.status === "Rejected") counts.rejected++;
-    });
-
-    return counts;
+  const getCompletionPercentage = () => {
+    const steps = Object.values(profileProgress);
+    const completed = steps.filter(Boolean).length;
+    return Math.round((completed / steps.length) * 100);
   };
 
-  const counts = getStatusCounts();
+  const completionPercentage = getCompletionPercentage();
+  const isProfileComplete = completionPercentage === 100;
 
-  const summaryCards = [
+  const profileSections = [
     { 
-      title: "Total Applications", 
-      value: counts.total, 
-      icon: FileText, 
-      color: "text-primary",
-      bgColor: "bg-primary/10"
+      key: "personalData",
+      title: "Personal Data", 
+      description: "Add your personal information", 
+      icon: User, 
+      url: "/candidate/personal-data",
+      completed: profileProgress.personalData
     },
     { 
-      title: "Pending Review", 
-      value: counts.pending, 
-      icon: Clock, 
-      color: "text-yellow-600",
-      bgColor: "bg-yellow-100 dark:bg-yellow-900/30"
+      key: "education",
+      title: "Education", 
+      description: "Add your educational background", 
+      icon: GraduationCap, 
+      url: "/candidate/education",
+      completed: profileProgress.education
     },
     { 
-      title: "In Progress", 
-      value: counts.inProgress, 
-      icon: Clock, 
-      color: "text-blue-600",
-      bgColor: "bg-blue-100 dark:bg-blue-900/30"
+      key: "experience",
+      title: "Experience", 
+      description: "Add your work experience", 
+      icon: Briefcase, 
+      url: "/candidate/experience",
+      completed: profileProgress.experience
     },
     { 
-      title: "Accepted", 
-      value: counts.accepted, 
-      icon: CheckCircle, 
-      color: "text-green-600",
-      bgColor: "bg-green-100 dark:bg-green-900/30"
+      key: "skills",
+      title: "Skills & Training", 
+      description: "Add skills and certifications", 
+      icon: Award, 
+      url: "/candidate/skills",
+      completed: profileProgress.skills || profileProgress.training
     }
   ];
 
-  const recentApplications = applications
+  const recentAssignments = applications
     .sort((a, b) => new Date(b.appliedAt).getTime() - new Date(a.appliedAt).getTime())
-    .slice(0, 5);
+    .slice(0, 3);
 
   return (
     <div className="flex h-full">
@@ -102,44 +128,75 @@ export default function CandidateDashboard() {
               Welcome back, {user?.fullName?.split(" ")[0]}!
             </h1>
             <p className="text-muted-foreground">
-              Track your job applications and manage your profile
+              Complete your profile so administrators can match you with suitable job positions
             </p>
           </div>
 
-          {/* Summary Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            {isLoading ? (
-              Array(4).fill(0).map((_, i) => (
-                <Card key={i}>
-                  <CardContent className="p-6">
-                    <Skeleton className="h-10 w-10 rounded-lg mb-4" />
-                    <Skeleton className="h-8 w-16 mb-2" />
-                    <Skeleton className="h-4 w-24" />
-                  </CardContent>
-                </Card>
-              ))
-            ) : (
-              summaryCards.map((card, index) => (
-                <Card key={index} className="hover-elevate">
-                  <CardContent className="p-6">
-                    <div className={`w-10 h-10 rounded-lg ${card.bgColor} flex items-center justify-center mb-4`}>
-                      <card.icon className={`w-5 h-5 ${card.color}`} />
-                    </div>
-                    <div className="text-3xl font-bold mb-1" data-testid={`stat-${card.title.toLowerCase().replace(/\s+/g, "-")}`}>
-                      {card.value}
-                    </div>
-                    <p className="text-sm text-muted-foreground">{card.title}</p>
-                  </CardContent>
-                </Card>
-              ))
-            )}
-          </div>
+          {/* Profile Completion Card */}
+          <Card className="mb-6">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between gap-2">
+                <CardTitle className="text-lg">Profile Completion</CardTitle>
+                <Badge variant={isProfileComplete ? "default" : "secondary"}>
+                  {completionPercentage}%
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Progress value={completionPercentage} className="h-2 mb-4" />
+              {isProfileComplete ? (
+                <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                  <CheckCircle className="w-5 h-5" />
+                  <span className="font-medium">Your profile is complete! Administrators will review and match you with positions.</span>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Complete all sections below to be considered for job positions
+                </p>
+              )}
+            </CardContent>
+          </Card>
 
-          {/* Recent Applications */}
+          {/* Profile Sections */}
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Complete Your Profile</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {profileSections.map((section) => (
+                  <Link key={section.key} href={section.url}>
+                    <div className="flex items-center gap-3 p-3 rounded-lg border hover-elevate cursor-pointer">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
+                        section.completed 
+                          ? "bg-green-100 dark:bg-green-900/30" 
+                          : "bg-primary/10"
+                      }`}>
+                        {section.completed ? (
+                          <Check className="w-5 h-5 text-green-600" />
+                        ) : (
+                          <section.icon className="w-5 h-5 text-primary" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium">{section.title}</h4>
+                        <p className="text-sm text-muted-foreground truncate">
+                          {section.completed ? "Completed" : section.description}
+                        </p>
+                      </div>
+                      <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Job Assignments */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2">
-              <CardTitle>Recent Applications</CardTitle>
-              <Link href="/candidate/my-applications">
+              <CardTitle>Job Assignments</CardTitle>
+              <Link href="/candidate/application-status">
                 <Button variant="ghost" size="sm" className="gap-1" data-testid="link-view-all-applications">
                   View All
                   <ArrowRight className="w-4 h-4" />
@@ -149,7 +206,7 @@ export default function CandidateDashboard() {
             <CardContent>
               {isLoading ? (
                 <div className="space-y-4">
-                  {Array(3).fill(0).map((_, i) => (
+                  {Array(2).fill(0).map((_, i) => (
                     <div key={i} className="flex items-center gap-4">
                       <Skeleton className="h-12 w-12 rounded-lg" />
                       <div className="flex-1">
@@ -160,29 +217,32 @@ export default function CandidateDashboard() {
                     </div>
                   ))}
                 </div>
-              ) : recentApplications.length === 0 ? (
+              ) : recentAssignments.length === 0 ? (
                 <div className="text-center py-8">
-                  <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground mb-4">No applications yet</p>
-                  <Link href="/candidate/search-jobs">
-                    <Button data-testid="button-browse-jobs">Browse Jobs</Button>
-                  </Link>
+                  <Clock className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground mb-2">No job assignments yet</p>
+                  <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+                    {isProfileComplete 
+                      ? "Administrators are reviewing your profile and will match you with suitable positions soon."
+                      : "Complete your profile above and administrators will match you with suitable positions."
+                    }
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {recentApplications.map((app) => (
+                  {recentAssignments.map((app) => (
                     <div 
                       key={app.id} 
-                      className="flex items-center gap-4 p-3 rounded-lg bg-accent/50 hover-elevate"
-                      data-testid={`application-${app.id}`}
+                      className="flex items-center gap-4 p-3 rounded-lg bg-accent/50"
+                      data-testid={`assignment-${app.id}`}
                     >
                       <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                         <FileText className="w-6 h-6 text-primary" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-medium truncate">{app.job?.title || "Unknown Job"}</h4>
+                        <h4 className="font-medium truncate">{app.job?.title || "Unknown Position"}</h4>
                         <p className="text-sm text-muted-foreground">
-                          {app.job?.department?.name || "Unknown Department"} • Applied {new Date(app.appliedAt).toLocaleDateString()}
+                          {app.job?.department?.name || "Unknown Department"} • Assigned {new Date(app.appliedAt).toLocaleDateString()}
                         </p>
                       </div>
                       <Badge className={`${statusColors[app.status as ApplicationStatus].bg} ${statusColors[app.status as ApplicationStatus].text} shrink-0`}>
@@ -194,36 +254,6 @@ export default function CandidateDashboard() {
               )}
             </CardContent>
           </Card>
-
-          {/* Quick Actions */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-            <Card className="hover-elevate">
-              <CardContent className="p-6">
-                <h3 className="font-semibold mb-2">Complete Your Profile</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  A complete profile increases your chances of getting hired
-                </p>
-                <Link href="/candidate/personal-data">
-                  <Button variant="outline" size="sm" data-testid="link-complete-profile">
-                    Update Profile
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-            <Card className="hover-elevate">
-              <CardContent className="p-6">
-                <h3 className="font-semibold mb-2">Find Your Dream Job</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Browse through our latest job openings
-                </p>
-                <Link href="/candidate/search-jobs">
-                  <Button variant="outline" size="sm" data-testid="link-search-jobs">
-                    Search Jobs
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          </div>
         </div>
       </div>
 

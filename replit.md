@@ -72,8 +72,14 @@ Preferred communication style: Simple, everyday language.
 - Experience Records: Work history with company, position, dates, description
 - Skills & Training: Professional skills and certifications
 - Jobs: Job postings with department, position, requirements, salary range
-- Applications: Job applications linking candidates to jobs with status tracking
+- Applications: Admin-assigned job positions linking candidates to jobs with status tracking
 - Application History: Audit trail of status changes with timestamps and notes
+
+**Candidate Workflow**
+- Candidates do NOT search or apply for jobs directly
+- Candidates only input their profile data (personal data, education, experience, skills, training)
+- SmartHire administrators assess candidates and assign them to suitable job positions
+- Candidates view their assigned positions via read-only Application Status page
 
 **Status Workflow**
 - Application statuses: Applied → Processing → Passed Selection → Accepted/Rejected

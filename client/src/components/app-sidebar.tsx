@@ -21,7 +21,6 @@ import {
   GraduationCap,
   Briefcase,
   Award,
-  Search,
   FileText,
   Users,
   Settings,
@@ -35,8 +34,7 @@ const candidateMenu = [
   { title: "Education", url: "/candidate/education", icon: GraduationCap },
   { title: "Experience", url: "/candidate/experience", icon: Briefcase },
   { title: "Skills & Training", url: "/candidate/skills", icon: Award },
-  { title: "Search Jobs", url: "/candidate/search-jobs", icon: Search },
-  { title: "My Applications", url: "/candidate/my-applications", icon: FileText }
+  { title: "Application Status", url: "/candidate/application-status", icon: FileText }
 ];
 
 const adminMenu = [
