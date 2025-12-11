@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/authContext";
-import { skillsApi, trainingsApi, languagesApi } from "@/lib/mockApi";
+import { skillsApi, trainingsApi } from "@/lib/mockApi";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -19,12 +19,10 @@ import {
   Award, 
   Trash2, 
   Loader2,
-  Languages,
   GraduationCap
 } from "lucide-react";
-import type { Skill, Training, Language } from "@shared/schema";
+import type { Skill, Training } from "@shared/schema";
 
-// Schemas
 const skillSchema = z.object({
   skillName: z.string().min(1, "Skill name is required"),
   proficiencyLevel: z.string().min(1, "Proficiency level is required")
@@ -36,31 +34,21 @@ const trainingSchema = z.object({
   year: z.coerce.number().min(1990).max(2030).optional()
 });
 
-const languageSchema = z.object({
-  language: z.string().min(1, "Language is required"),
-  proficiency: z.string().min(1, "Proficiency is required")
-});
-
 type SkillForm = z.infer<typeof skillSchema>;
 type TrainingForm = z.infer<typeof trainingSchema>;
-type LanguageForm = z.infer<typeof languageSchema>;
 
 const proficiencyLevels = ["Beginner", "Intermediate", "Advanced", "Expert"];
-const languageProficiencies = ["Basic", "Conversational", "Fluent", "Native"];
 
 export default function SkillsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [skills, setSkills] = useState<Skill[]>([]);
   const [trainings, setTrainings] = useState<Training[]>([]);
-  const [languages, setLanguages] = useState<Language[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("skills");
   
-  // Dialog states
   const [skillDialogOpen, setSkillDialogOpen] = useState(false);
   const [trainingDialogOpen, setTrainingDialogOpen] = useState(false);
-  const [languageDialogOpen, setLanguageDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   const skillForm = useForm<SkillForm>({
@@ -73,29 +61,21 @@ export default function SkillsPage() {
     defaultValues: { title: "", organizer: "", year: undefined }
   });
 
-  const languageForm = useForm<LanguageForm>({
-    resolver: zodResolver(languageSchema),
-    defaultValues: { language: "", proficiency: "" }
-  });
-
   useEffect(() => {
     const loadData = async () => {
       if (user) {
-        const [skillsData, trainingsData, languagesData] = await Promise.all([
+        const [skillsData, trainingsData] = await Promise.all([
           skillsApi.getByUserId(user.id),
-          trainingsApi.getByUserId(user.id),
-          languagesApi.getByUserId(user.id)
+          trainingsApi.getByUserId(user.id)
         ]);
         setSkills(skillsData);
         setTrainings(trainingsData);
-        setLanguages(languagesData);
       }
       setIsLoading(false);
     };
     loadData();
   }, [user]);
 
-  // Skill handlers
   const handleAddSkill = async (data: SkillForm) => {
     if (!user) return;
     setIsSaving(true);
@@ -126,7 +106,6 @@ export default function SkillsPage() {
     }
   };
 
-  // Training handlers
   const handleAddTraining = async (data: TrainingForm) => {
     if (!user) return;
     setIsSaving(true);
@@ -158,47 +137,13 @@ export default function SkillsPage() {
     }
   };
 
-  // Language handlers
-  const handleAddLanguage = async (data: LanguageForm) => {
-    if (!user) return;
-    setIsSaving(true);
-    try {
-      const newLanguage = await languagesApi.create({
-        userId: user.id,
-        language: data.language,
-        proficiency: data.proficiency
-      });
-      setLanguages(prev => [...prev, newLanguage]);
-      setLanguageDialogOpen(false);
-      languageForm.reset();
-      toast({ title: "Language added", description: "Your language has been added." });
-    } catch (error) {
-      toast({ title: "Error", description: "Failed to add language", variant: "destructive" });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleDeleteLanguage = async (id: string) => {
-    try {
-      await languagesApi.delete(id);
-      setLanguages(prev => prev.filter(l => l.id !== id));
-      toast({ title: "Language removed", description: "Your language has been removed." });
-    } catch (error) {
-      toast({ title: "Error", description: "Failed to delete language", variant: "destructive" });
-    }
-  };
-
   const getProficiencyColor = (level: string) => {
     switch (level.toLowerCase()) {
       case "expert":
-      case "native":
         return "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300";
       case "advanced":
-      case "fluent":
         return "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300";
       case "intermediate":
-      case "conversational":
         return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300";
       default:
         return "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300";
@@ -226,20 +171,17 @@ export default function SkillsPage() {
       <div className="mb-8">
         <h1 className="text-2xl font-bold mb-2">Skills & Training</h1>
         <p className="text-muted-foreground">
-          Manage your skills, certifications, and languages
+          Manage your skills and certifications
         </p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="skills" data-testid="tab-skills">
             Skills ({skills.length})
           </TabsTrigger>
           <TabsTrigger value="trainings" data-testid="tab-trainings">
             Training ({trainings.length})
-          </TabsTrigger>
-          <TabsTrigger value="languages" data-testid="tab-languages">
-            Languages ({languages.length})
           </TabsTrigger>
         </TabsList>
 
@@ -321,7 +263,7 @@ export default function SkillsPage() {
                         <div>
                           <p className="font-medium">{training.title}</p>
                           <p className="text-sm text-muted-foreground">
-                            {training.organizer}{training.year && ` • ${training.year}`}
+                            {training.organizer}{training.year && ` - ${training.year}`}
                           </p>
                         </div>
                       </div>
@@ -334,50 +276,6 @@ export default function SkillsPage() {
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Languages Tab */}
-        <TabsContent value="languages" className="mt-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between gap-2">
-              <div>
-                <CardTitle className="text-lg">Languages</CardTitle>
-                <CardDescription>Add languages you speak</CardDescription>
-              </div>
-              <Button onClick={() => setLanguageDialogOpen(true)} data-testid="button-add-language">
-                <Plus className="w-4 h-4 mr-2" />
-                Add Language
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {languages.length === 0 ? (
-                <div className="text-center py-8">
-                  <Languages className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">No languages added yet</p>
-                </div>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {languages.map((lang) => (
-                    <Badge 
-                      key={lang.id} 
-                      className={`${getProficiencyColor(lang.proficiency || "")} px-3 py-1.5 text-sm gap-2`}
-                      data-testid={`language-${lang.id}`}
-                    >
-                      {lang.language}
-                      <span className="opacity-70">({lang.proficiency})</span>
-                      <button 
-                        onClick={() => handleDeleteLanguage(lang.id)}
-                        className="ml-1 hover:text-destructive"
-                        data-testid={`button-delete-language-${lang.id}`}
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    </Badge>
                   ))}
                 </div>
               )}
@@ -490,60 +388,6 @@ export default function SkillsPage() {
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setTrainingDialogOpen(false)}>Cancel</Button>
                 <Button type="submit" disabled={isSaving} data-testid="button-save-training">
-                  {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Add"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Add Language Dialog */}
-      <Dialog open={languageDialogOpen} onOpenChange={setLanguageDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add Language</DialogTitle>
-          </DialogHeader>
-          <Form {...languageForm}>
-            <form onSubmit={languageForm.handleSubmit(handleAddLanguage)} className="space-y-4">
-              <FormField
-                control={languageForm.control}
-                name="language"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Language *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., English, Spanish" data-testid="input-language-name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={languageForm.control}
-                name="proficiency"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Proficiency Level *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger data-testid="select-language-proficiency">
-                          <SelectValue placeholder="Select level" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {languageProficiencies.map((level) => (
-                          <SelectItem key={level} value={level}>{level}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setLanguageDialogOpen(false)}>Cancel</Button>
-                <Button type="submit" disabled={isSaving} data-testid="button-save-language">
                   {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Add"}
                 </Button>
               </DialogFooter>

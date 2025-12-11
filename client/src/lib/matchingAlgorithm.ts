@@ -74,7 +74,12 @@ function calculateEducationScore(candidate: CandidateWithDetails, job: Job): num
     ...candidate.education.map(edu => getEducationLevel(edu.level))
   );
   
-  let educationLevelScore = highestEducation >= minRequired ? 50 : (highestEducation / Math.max(minRequired, 1)) * 50;
+  let educationLevelScore = 0;
+  if (highestEducation >= minRequired) {
+    educationLevelScore = 50;
+  } else if (minRequired > 0) {
+    educationLevelScore = (highestEducation / minRequired) * 40;
+  }
   
   let majorScore = 0;
   if (job.requiredMajors && job.requiredMajors.length > 0) {
@@ -87,7 +92,7 @@ function calculateEducationScore(candidate: CandidateWithDetails, job: Job): num
       }
     }
   } else {
-    majorScore = 30;
+    majorScore = 25;
   }
   
   return Math.min(100, educationLevelScore + majorScore);
@@ -100,7 +105,7 @@ function calculateSkillsScore(candidate: CandidateWithDetails, job: Job): number
   
   const requiredSkills = job.optionalSkills || [];
   if (requiredSkills.length === 0) {
-    return candidate.skills.length > 0 ? 60 : 0;
+    return Math.min(40, candidate.skills.length * 10);
   }
   
   let matchedSkills = 0;
@@ -119,17 +124,25 @@ function calculateSkillsScore(candidate: CandidateWithDetails, job: Job): number
   const matchRatio = matchedSkills / requiredSkills.length;
   
   const proficiencyBonus = candidate.skills.reduce((bonus, skill) => {
-    if (skill.proficiencyLevel === "Expert") return bonus + 5;
-    if (skill.proficiencyLevel === "Advanced") return bonus + 3;
+    const isMatched = requiredSkills.some(req => {
+      const normalizedReq = normalizeString(req);
+      const normalizedSkill = normalizeString(skill.skillName);
+      return normalizedSkill.includes(normalizedReq) || normalizedReq.includes(normalizedSkill);
+    });
+    
+    if (isMatched) {
+      if (skill.proficiencyLevel === "Expert") return bonus + 5;
+      if (skill.proficiencyLevel === "Advanced") return bonus + 3;
+    }
     return bonus;
   }, 0);
   
-  return Math.min(100, (matchRatio * 80) + Math.min(20, proficiencyBonus));
+  return Math.min(100, (matchRatio * 85) + Math.min(15, proficiencyBonus));
 }
 
 function calculateExperienceScore(candidate: CandidateWithDetails, job: Job): number {
   if (!candidate.experience || candidate.experience.length === 0) {
-    return 20;
+    return 0;
   }
   
   const currentYear = new Date().getFullYear();
@@ -139,7 +152,8 @@ function calculateExperienceScore(candidate: CandidateWithDetails, job: Job): nu
   for (const exp of candidate.experience) {
     const startYear = exp.yearStart || currentYear;
     const endYear = exp.yearEnd || currentYear;
-    totalYears += endYear - startYear;
+    const years = Math.max(0, endYear - startYear);
+    totalYears += years;
     
     if (job.title) {
       const positionSimilarity = calculateStringSimilarity(exp.position, job.title);
@@ -148,19 +162,19 @@ function calculateExperienceScore(candidate: CandidateWithDetails, job: Job): nu
     
     if (exp.description && job.description) {
       const descSimilarity = calculateStringSimilarity(exp.description, job.description);
-      relevanceScore = Math.max(relevanceScore, descSimilarity * 0.5);
+      relevanceScore = Math.max(relevanceScore, descSimilarity * 0.7);
     }
   }
   
-  const yearsScore = Math.min(40, totalYears * 8);
-  const relevancePoints = relevanceScore * 60;
+  const yearsScore = Math.min(35, totalYears * 7);
+  const relevancePoints = relevanceScore * 65;
   
   return Math.min(100, yearsScore + relevancePoints);
 }
 
 function calculateTrainingScore(candidate: CandidateWithDetails, job: Job): number {
   if (!candidate.trainings || candidate.trainings.length === 0) {
-    return 30;
+    return 0;
   }
   
   let relevanceScore = 0;
@@ -176,14 +190,14 @@ function calculateTrainingScore(candidate: CandidateWithDetails, job: Job): numb
     const words = trainingText.split(/\s+/);
     for (const word of words) {
       if (word.length > 3 && jobKeywords.includes(word)) {
-        relevanceScore += 15;
+        relevanceScore += 20;
       }
     }
   }
   
-  const baseScore = Math.min(40, candidate.trainings.length * 10);
+  const baseScore = Math.min(30, candidate.trainings.length * 10);
   
-  return Math.min(100, baseScore + Math.min(60, relevanceScore));
+  return Math.min(100, baseScore + Math.min(70, relevanceScore));
 }
 
 export function calculateCandidateJobMatch(
@@ -231,6 +245,10 @@ export function findBestJobMatch(
     return null;
   }
   
+  if (!candidate || (!candidate.education?.length && !candidate.skills?.length && !candidate.experience?.length && !candidate.trainings?.length)) {
+    return null;
+  }
+  
   const matches = jobs.map(job => calculateCandidateJobMatch(candidate, job));
   matches.sort((a, b) => b.matchScore - a.matchScore);
   
@@ -242,6 +260,10 @@ export function getAllJobMatches(
   jobs: JobWithDetails[]
 ): MatchResult[] {
   if (!jobs || jobs.length === 0) {
+    return [];
+  }
+  
+  if (!candidate) {
     return [];
   }
   
