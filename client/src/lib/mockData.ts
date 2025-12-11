@@ -365,32 +365,40 @@ export const demoApplicationHistory: ApplicationHistory[] = [
 // Chatbot FAQ
 export const chatbotFAQ: FAQItem[] = [
   {
-    keywords: ["status", "application status", "where is my application", "check status"],
-    response: "You can check your application status in the 'My Applications' section. Each application shows its current status: Applied, Processing, Passed Selection, Accepted, or Rejected."
+    keywords: ["how", "works", "process", "smarthire", "system"],
+    response: "SmartHire works differently from traditional job boards. Here's how it works: 1) You complete your profile with personal data, education, experience, skills, and training. 2) Our administrators review your profile and use ML-based matching to find suitable positions. 3) When matched, you'll see the position in your 'Application Status' page. You don't search or apply for jobs directly - we match you with the best opportunities!"
   },
   {
-    keywords: ["apply", "how to apply", "submit application", "application process"],
-    response: "To apply for a job: 1) Go to 'Search Jobs' 2) Find a job you're interested in 3) Click on the job to view details 4) Click the 'Apply' button. Make sure your profile is complete before applying!"
+    keywords: ["status", "application status", "where is my application", "check status", "assigned", "assignment"],
+    response: "You can check your job assignments in the 'Application Status' section. This shows positions that SmartHire administrators have matched you with based on your profile. Each assignment shows its current status: Applied, Processing, Passed Selection, Accepted, or Rejected."
+  },
+  {
+    keywords: ["apply", "how to apply", "submit application", "application process", "find job", "search job"],
+    response: "At SmartHire, you don't apply for jobs directly. Instead, complete your profile with all your information (personal data, education, experience, skills, and training), and our administrators will review your qualifications and match you with suitable positions. The better your profile, the better the match!"
   },
   {
     keywords: ["cv", "resume", "upload cv", "upload resume"],
-    response: "You can upload your CV in the 'Personal Data' section. We accept PDF, DOC, and DOCX files up to 5MB. You can also use our CV extraction feature to auto-fill your profile!"
+    response: "You can upload your CV in the 'Personal Data' section. We accept PDF, DOC, and DOCX files up to 5MB. Your CV helps our administrators better understand your background when matching you with positions."
   },
   {
-    keywords: ["profile", "update profile", "edit profile", "personal data"],
-    response: "To update your profile, go to 'Personal Data' from the sidebar. You can edit your personal information, contact details, and upload your CV there."
+    keywords: ["profile", "update profile", "edit profile", "personal data", "complete"],
+    response: "To complete your profile, fill out all 5 sections: 1) Personal Data - your basic info and CV, 2) Education - your academic background, 3) Experience - your work history, 4) Skills - your technical abilities, 5) Training - certifications and courses. A complete profile increases your chances of being matched with great positions!"
   },
   {
     keywords: ["education", "add education", "school", "university"],
-    response: "You can add your educational background in the 'Education' section. Include your degree level, institution name, major, and graduation year."
+    response: "Add your educational background in the 'Education' section. Include your degree level (Bachelor, Master, etc.), institution name, major, and graduation year. This helps us match you with positions that fit your qualifications."
   },
   {
     keywords: ["skills", "add skills", "training", "certifications"],
-    response: "Add your skills and training in the 'Skills & Training' section. You can list your technical skills, language proficiencies, and professional certifications."
+    response: "Add your skills and training in the 'Skills' section. List your technical skills with proficiency levels, plus any professional certifications or training courses. Skills are heavily weighted in our matching algorithm!"
   },
   {
     keywords: ["interview", "next steps", "what happens next"],
-    response: "After you apply, our team reviews your application. If selected, you'll move to 'Processing' status. Candidates who pass initial screening will be marked as 'Passed Selection' and may be contacted for interviews."
+    response: "After being matched with a position, your status will progress: Applied (newly matched) -> Processing (under review) -> Passed Selection (qualified for interview) -> Accepted or Rejected. If you pass selection, our team will contact you to schedule interviews."
+  },
+  {
+    keywords: ["match", "matching", "algorithm", "score"],
+    response: "Our ML-based matching algorithm analyzes your profile against job requirements. We consider: Education (25%), Skills (35%), Experience (25%), and Training (15%). Candidates with 75% or higher match scores are flagged as 'Good Fits' for positions."
   },
   {
     keywords: ["contact", "support", "help", "assistance"],
@@ -398,7 +406,7 @@ export const chatbotFAQ: FAQItem[] = [
   },
   {
     keywords: ["hello", "hi", "hey", "greetings"],
-    response: "Hello! I'm SmartHire's virtual assistant. I can help you with questions about applications, your profile, job searches, and more. What would you like to know?"
+    response: "Hello! I'm SmartHire's virtual assistant. I can help you understand how SmartHire works, complete your profile, and track your job assignments. What would you like to know?"
   },
   {
     keywords: ["thank", "thanks", "appreciate"],
@@ -416,7 +424,7 @@ export function findChatbotResponse(message: string): string {
     }
   }
   
-  return "I'm sorry, I didn't quite understand that. You can ask me about application status, how to apply, uploading your CV, or updating your profile. For more specific questions, please contact our HR team.";
+  return "I'm sorry, I didn't quite understand that. You can ask me about how SmartHire works, completing your profile, checking your application status, or uploading your CV. For more specific questions, please contact our HR team.";
 }
 
 // Status badge colors

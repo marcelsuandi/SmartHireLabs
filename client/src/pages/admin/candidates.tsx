@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/authContext";
-import { applicationsApi, getCandidateDetails, jobsApi } from "@/lib/mockApi";
+import { usersApi, applicationsApi, getCandidateDetails, jobsApi } from "@/lib/mockApi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -33,127 +33,141 @@ import {
   Clock,
   CheckCircle,
   XCircle,
+  History,
   Loader2,
   Target,
   Briefcase,
   BookOpen,
-  Sparkles
+  Sparkles,
+  UserPlus,
+  AlertCircle
 } from "lucide-react";
 import { statusColors } from "@/lib/mockData";
 import { findBestJobMatch, getAllJobMatches, type MatchResult } from "@/lib/matchingAlgorithm";
-import type { ApplicationWithDetails, ApplicationStatus, CandidateWithDetails, JobWithDetails } from "@shared/schema";
+import type { User as UserType, ApplicationWithDetails, ApplicationStatus, CandidateWithDetails, JobWithDetails, ApplicationHistory } from "@shared/schema";
+
+interface CandidateRow {
+  user: UserType;
+  details: CandidateWithDetails | null;
+  bestMatch: MatchResult | null;
+  applications: ApplicationWithDetails[];
+}
 
 export default function AdminCandidatesPage() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [applications, setApplications] = useState<ApplicationWithDetails[]>([]);
+  const [candidates, setCandidates] = useState<CandidateRow[]>([]);
   const [allJobs, setAllJobs] = useState<JobWithDetails[]>([]);
-  const [candidateMatches, setCandidateMatches] = useState<Map<string, MatchResult | null>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [selectedApp, setSelectedApp] = useState<ApplicationWithDetails | null>(null);
-  const [candidateDetails, setCandidateDetails] = useState<CandidateWithDetails | null>(null);
+  const [profileFilter, setProfileFilter] = useState<string>("all");
+  const [selectedCandidate, setSelectedCandidate] = useState<CandidateRow | null>(null);
   const [candidateJobMatches, setCandidateJobMatches] = useState<MatchResult[]>([]);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [confirmAction, setConfirmAction] = useState<{ status: ApplicationStatus; appId: string } | null>(null);
+  const [isAssigning, setIsAssigning] = useState(false);
+  const [selectedJobForAssign, setSelectedJobForAssign] = useState<string>("");
+  const [showAssignDialog, setShowAssignDialog] = useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [confirmStatusChange, setConfirmStatusChange] = useState<{ appId: string; status: ApplicationStatus; jobTitle: string } | null>(null);
+  const [applicationHistories, setApplicationHistories] = useState<Map<string, ApplicationHistory[]>>(new Map());
 
   useEffect(() => {
     loadData();
   }, []);
 
   const loadData = async () => {
-    const [apps, jobs] = await Promise.all([
-      applicationsApi.getAll(),
-      jobsApi.getActive()
+    setIsLoading(true);
+    const [allCandidates, jobs, allApplications] = await Promise.all([
+      usersApi.getAllCandidates(),
+      jobsApi.getActive(),
+      applicationsApi.getAll()
     ]);
-    setApplications(apps);
     setAllJobs(jobs);
-    
-    const matches = new Map<string, MatchResult | null>();
-    for (const app of apps) {
-      if (app.candidate) {
-        const bestMatch = findBestJobMatch(app.candidate, jobs);
-        matches.set(app.userId, bestMatch);
-      }
+
+    // Build candidate rows with details
+    const rows: CandidateRow[] = [];
+    for (const candidate of allCandidates) {
+      const details = await getCandidateDetails(candidate.id);
+      const userApps = allApplications.filter(a => a.userId === candidate.id);
+      const bestMatch = details ? findBestJobMatch(details, jobs) : null;
+      rows.push({
+        user: candidate,
+        details: details || null,
+        bestMatch,
+        applications: userApps
+      });
     }
-    setCandidateMatches(matches);
+    
+    setCandidates(rows);
     setIsLoading(false);
   };
 
-  const handleViewDetails = async (app: ApplicationWithDetails) => {
-    setSelectedApp(app);
-    if (app.userId) {
-      const details = await getCandidateDetails(app.userId);
-      setCandidateDetails(details || null);
-      
-      if (details) {
-        const allMatches = getAllJobMatches(details, allJobs);
-        setCandidateJobMatches(allMatches);
-      }
+  const handleViewDetails = async (row: CandidateRow) => {
+    setSelectedCandidate(row);
+    if (row.details) {
+      const allMatches = getAllJobMatches(row.details, allJobs);
+      setCandidateJobMatches(allMatches);
+    } else {
+      setCandidateJobMatches([]);
     }
+    
+    // Load history for all applications
+    const histories = new Map<string, ApplicationHistory[]>();
+    for (const app of row.applications) {
+      const history = await applicationsApi.getHistory(app.id);
+      histories.set(app.id, history);
+    }
+    setApplicationHistories(histories);
   };
 
-  const handleStatusChange = async (appId: string, newStatus: ApplicationStatus) => {
-    if (!user) return;
+  const handleAssignJob = async () => {
+    if (!selectedCandidate || !selectedJobForAssign || !user) return;
     
-    setIsUpdating(true);
+    setIsAssigning(true);
     try {
-      await applicationsApi.updateStatus(appId, newStatus, user.fullName, "admin");
-      await loadData();
-      
-      if (selectedApp?.id === appId) {
-        const updated = applications.find(a => a.id === appId);
-        if (updated) {
-          setSelectedApp({ ...updated, status: newStatus });
-        }
-      }
+      await applicationsApi.create(selectedJobForAssign, selectedCandidate.user.id);
       
       toast({
-        title: "Status updated",
-        description: `Application status changed to ${newStatus}`
+        title: "Job Assigned",
+        description: `Successfully assigned candidate to the position.`
       });
+      
+      setShowAssignDialog(false);
+      setSelectedJobForAssign("");
+      setSelectedCandidate(null);
+      await loadData();
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to update status",
+        description: "Failed to assign job",
         variant: "destructive"
       });
     } finally {
-      setIsUpdating(false);
-      setConfirmAction(null);
+      setIsAssigning(false);
     }
   };
 
-  const filteredApplications = applications.filter(app => {
+  const getProfileStatus = (row: CandidateRow) => {
+    if (!row.details) return "incomplete";
+    const hasEducation = row.details.education && row.details.education.length > 0;
+    const hasExperience = row.details.experience && row.details.experience.length > 0;
+    const hasSkills = row.details.skills && row.details.skills.length > 0;
+    const hasProfile = row.details.profile;
+    
+    if (hasProfile && hasEducation && hasExperience && hasSkills) return "complete";
+    if (hasProfile || hasEducation || hasExperience || hasSkills) return "partial";
+    return "incomplete";
+  };
+
+  const filteredCandidates = candidates.filter(row => {
     const matchesSearch = 
-      app.candidate?.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      app.candidate?.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      app.job?.title.toLowerCase().includes(searchQuery.toLowerCase());
+      row.user.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      row.user.email.toLowerCase().includes(searchQuery.toLowerCase());
     
-    const matchesStatus = statusFilter === "all" || app.status === statusFilter;
+    if (profileFilter === "all") return matchesSearch;
     
-    return matchesSearch && matchesStatus;
+    const status = getProfileStatus(row);
+    return matchesSearch && status === profileFilter;
   });
-
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric"
-    });
-  };
-
-  const getStatusActions = (currentStatus: ApplicationStatus) => {
-    const actions: ApplicationStatus[] = [];
-    if (currentStatus === "Applied") {
-      actions.push("Processing");
-    }
-    if (currentStatus === "Processing") {
-      actions.push("Passed Selection", "Rejected");
-    }
-    return actions;
-  };
 
   const getMatchScoreColor = (score: number) => {
     if (score >= 75) return "text-green-600 dark:text-green-400";
@@ -165,6 +179,82 @@ export default function AdminCandidatesPage() {
     if (score >= 75) return "default";
     if (score >= 50) return "secondary";
     return "destructive";
+  };
+
+  const getProfileBadge = (status: string) => {
+    switch (status) {
+      case "complete":
+        return <Badge className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">Complete</Badge>;
+      case "partial":
+        return <Badge className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300">Partial</Badge>;
+      default:
+        return <Badge className="bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">Incomplete</Badge>;
+    }
+  };
+
+  // Get jobs not already assigned to this candidate
+  const getAvailableJobs = (row: CandidateRow) => {
+    const assignedJobIds = row.applications.map(a => a.jobId);
+    return allJobs.filter(j => !assignedJobIds.includes(j.id));
+  };
+
+  // Get next available statuses based on current status
+  const getNextStatuses = (currentStatus: ApplicationStatus): ApplicationStatus[] => {
+    switch (currentStatus) {
+      case "Applied":
+        return ["Processing"];
+      case "Processing":
+        return ["Passed Selection", "Rejected"];
+      case "Passed Selection":
+        return ["Accepted", "Rejected"];
+      default:
+        return [];
+    }
+  };
+
+  // Confirm and handle status update
+  const handleConfirmStatusUpdate = async () => {
+    if (!user || !confirmStatusChange) return;
+    setIsUpdatingStatus(true);
+    try {
+      await applicationsApi.updateStatus(
+        confirmStatusChange.appId, 
+        confirmStatusChange.status, 
+        user.fullName, 
+        "admin"
+      );
+      toast({
+        title: "Status Updated",
+        description: `Application for "${confirmStatusChange.jobTitle}" changed to ${confirmStatusChange.status}`
+      });
+      await loadData();
+      // Refresh the selected candidate's applications and history
+      if (selectedCandidate) {
+        const updatedApps = await applicationsApi.getAll();
+        const userApps = updatedApps.filter(a => a.userId === selectedCandidate.user.id);
+        setSelectedCandidate({
+          ...selectedCandidate,
+          applications: userApps
+        });
+        
+        // Refresh history
+        const histories = new Map<string, ApplicationHistory[]>();
+        for (const app of userApps) {
+          const history = await applicationsApi.getHistory(app.id);
+          histories.set(app.id, history);
+        }
+        setApplicationHistories(histories);
+      }
+      setConfirmStatusChange(null);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update status",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUpdatingStatus(false);
+    }
   };
 
   if (isLoading) {
@@ -187,7 +277,7 @@ export default function AdminCandidatesPage() {
       <div className="mb-8">
         <h1 className="text-2xl font-bold mb-2">Candidate Management</h1>
         <p className="text-muted-foreground">
-          Review and manage job applications with ML-powered matching
+          Review all registered candidates and assign them to suitable job positions
         </p>
       </div>
 
@@ -196,32 +286,30 @@ export default function AdminCandidatesPage() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Search by name, email, or job title..."
+            placeholder="Search by name or email..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
             data-testid="input-search-candidates"
           />
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full md:w-48" data-testid="select-status-filter">
+        <Select value={profileFilter} onValueChange={setProfileFilter}>
+          <SelectTrigger className="w-full md:w-48" data-testid="select-profile-filter">
             <Filter className="w-4 h-4 mr-2" />
-            <SelectValue placeholder="Status" />
+            <SelectValue placeholder="Profile Status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="Applied">Applied</SelectItem>
-            <SelectItem value="Processing">Processing</SelectItem>
-            <SelectItem value="Passed Selection">Passed Selection</SelectItem>
-            <SelectItem value="Accepted">Accepted</SelectItem>
-            <SelectItem value="Rejected">Rejected</SelectItem>
+            <SelectItem value="all">All Profiles</SelectItem>
+            <SelectItem value="complete">Complete</SelectItem>
+            <SelectItem value="partial">Partial</SelectItem>
+            <SelectItem value="incomplete">Incomplete</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       {/* Results count */}
       <p className="text-sm text-muted-foreground mb-4">
-        Showing {filteredApplications.length} application{filteredApplications.length !== 1 ? "s" : ""}
+        Showing {filteredCandidates.length} candidate{filteredCandidates.length !== 1 ? "s" : ""}
       </p>
 
       {/* Candidates Table */}
@@ -232,110 +320,118 @@ export default function AdminCandidatesPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-12">No</TableHead>
-                  <TableHead>Job Title</TableHead>
                   <TableHead>Candidate Name</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Profile Status</TableHead>
+                  <TableHead>Assigned Jobs</TableHead>
                   <TableHead>
                     <div className="flex items-center gap-1">
                       <Sparkles className="w-4 h-4" />
                       Best Match
                     </div>
                   </TableHead>
-                  <TableHead>Applied Date</TableHead>
                   <TableHead className="text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredApplications.length === 0 ? (
+                {filteredCandidates.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                      No applications found
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                      No candidates found
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredApplications.map((app, index) => {
-                    const bestMatch = candidateMatches.get(app.userId);
-                    return (
-                      <TableRow key={app.id} data-testid={`row-candidate-${app.id}`}>
-                        <TableCell className="font-medium">{index + 1}</TableCell>
-                        <TableCell>{app.job?.title || "N/A"}</TableCell>
-                        <TableCell>{app.candidate?.fullName || "N/A"}</TableCell>
-                        <TableCell>{app.candidate?.email || "N/A"}</TableCell>
-                        <TableCell>
-                          <Badge className={`${statusColors[app.status].bg} ${statusColors[app.status].text}`}>
-                            {app.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {bestMatch ? (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <div className="flex flex-col gap-1 cursor-help">
-                                  <div className="flex items-center gap-2">
-                                    <Badge 
-                                      variant={getMatchBadgeVariant(bestMatch.matchScore)}
-                                      className="gap-1"
-                                      data-testid={`match-score-${app.id}`}
-                                    >
-                                      <Target className="w-3 h-3" />
-                                      {bestMatch.matchScore}%
-                                    </Badge>
-                                    {bestMatch.isGoodFit && (
-                                      <CheckCircle className="w-4 h-4 text-green-500" />
-                                    )}
-                                  </div>
-                                  <span className="text-xs text-muted-foreground truncate max-w-[150px]">
-                                    {bestMatch.jobTitle}
-                                  </span>
-                                </div>
-                              </TooltipTrigger>
-                              <TooltipContent className="max-w-xs">
-                                <div className="space-y-2">
-                                  <p className="font-semibold">Best Match: {bestMatch.jobTitle}</p>
-                                  <div className="space-y-1 text-xs">
-                                    <div className="flex justify-between">
-                                      <span>Education:</span>
-                                      <span>{bestMatch.breakdown.educationScore}%</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span>Skills:</span>
-                                      <span>{bestMatch.breakdown.skillsScore}%</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span>Experience:</span>
-                                      <span>{bestMatch.breakdown.experienceScore}%</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span>Training:</span>
-                                      <span>{bestMatch.breakdown.trainingScore}%</span>
-                                    </div>
-                                  </div>
-                                  {bestMatch.isGoodFit && (
-                                    <p className="text-green-500 font-medium">Good Fit!</p>
+                  filteredCandidates.map((row, index) => (
+                    <TableRow key={row.user.id} data-testid={`row-candidate-${row.user.id}`}>
+                      <TableCell className="font-medium">{index + 1}</TableCell>
+                      <TableCell>{row.user.fullName}</TableCell>
+                      <TableCell>{row.user.email}</TableCell>
+                      <TableCell>{getProfileBadge(getProfileStatus(row))}</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{row.applications.length}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        {row.bestMatch ? (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="flex flex-col gap-1 cursor-help">
+                                <div className="flex items-center gap-2">
+                                  <Badge 
+                                    variant={getMatchBadgeVariant(row.bestMatch.matchScore)}
+                                    className="gap-1"
+                                    data-testid={`match-score-${row.user.id}`}
+                                  >
+                                    <Target className="w-3 h-3" />
+                                    {row.bestMatch.matchScore}%
+                                  </Badge>
+                                  {row.bestMatch.isGoodFit && (
+                                    <CheckCircle className="w-4 h-4 text-green-500" />
                                   )}
                                 </div>
-                              </TooltipContent>
-                            </Tooltip>
-                          ) : (
-                            <span className="text-muted-foreground text-sm">No data</span>
-                          )}
-                        </TableCell>
-                        <TableCell>{formatDate(app.appliedAt)}</TableCell>
-                        <TableCell className="text-right">
+                                <span className="text-xs text-muted-foreground truncate max-w-[150px]">
+                                  {row.bestMatch.jobTitle}
+                                </span>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <div className="space-y-2">
+                                <p className="font-semibold">Best Match: {row.bestMatch.jobTitle}</p>
+                                <div className="space-y-1 text-xs">
+                                  <div className="flex justify-between">
+                                    <span>Education:</span>
+                                    <span>{row.bestMatch.breakdown.educationScore}%</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Skills:</span>
+                                    <span>{row.bestMatch.breakdown.skillsScore}%</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Experience:</span>
+                                    <span>{row.bestMatch.breakdown.experienceScore}%</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Training:</span>
+                                    <span>{row.bestMatch.breakdown.trainingScore}%</span>
+                                  </div>
+                                </div>
+                                {row.bestMatch.isGoodFit && (
+                                  <p className="text-green-500 font-medium">Good Fit!</p>
+                                )}
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">No data</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
                           <Button 
                             variant="outline" 
                             size="sm"
-                            onClick={() => handleViewDetails(app)}
-                            data-testid={`button-view-${app.id}`}
+                            onClick={() => handleViewDetails(row)}
+                            data-testid={`button-view-${row.user.id}`}
                           >
                             <Eye className="w-4 h-4 mr-1" />
                             Details
                           </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
+                          <Button 
+                            variant="default" 
+                            size="sm"
+                            onClick={() => {
+                              setSelectedCandidate(row);
+                              setShowAssignDialog(true);
+                            }}
+                            disabled={getAvailableJobs(row).length === 0}
+                            data-testid={`button-assign-${row.user.id}`}
+                          >
+                            <UserPlus className="w-4 h-4 mr-1" />
+                            Assign
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
                 )}
               </TableBody>
             </Table>
@@ -344,14 +440,14 @@ export default function AdminCandidatesPage() {
       </Card>
 
       {/* Candidate Detail Dialog */}
-      <Dialog open={!!selectedApp} onOpenChange={() => { setSelectedApp(null); setCandidateDetails(null); setCandidateJobMatches([]); }}>
+      <Dialog open={!!selectedCandidate && !showAssignDialog} onOpenChange={() => { setSelectedCandidate(null); setCandidateJobMatches([]); }}>
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-          {selectedApp && (
+          {selectedCandidate && (
             <>
               <DialogHeader>
                 <DialogTitle>Candidate Details</DialogTitle>
                 <DialogDescription>
-                  Application for {selectedApp.job?.title}
+                  {selectedCandidate.user.fullName} - {selectedCandidate.user.email}
                 </DialogDescription>
               </DialogHeader>
               
@@ -374,33 +470,33 @@ export default function AdminCandidatesPage() {
                               <User className="w-8 h-8 text-primary" />
                             </div>
                             <div>
-                              <h3 className="font-semibold text-lg">{candidateDetails?.fullName}</h3>
-                              <p className="text-muted-foreground">{candidateDetails?.email}</p>
+                              <h3 className="font-semibold text-lg">{selectedCandidate.user.fullName}</h3>
+                              <p className="text-muted-foreground">{selectedCandidate.user.email}</p>
                             </div>
                           </div>
                           <div className="space-y-2 text-sm">
                             <div className="flex items-center gap-2">
                               <Phone className="w-4 h-4 text-muted-foreground" />
-                              <span>{candidateDetails?.phone || "N/A"}</span>
+                              <span>{selectedCandidate.user.phone || "N/A"}</span>
                             </div>
-                            {candidateDetails?.profile && (
+                            {selectedCandidate.details?.profile && (
                               <>
                                 <div className="flex items-center gap-2">
                                   <span className="text-muted-foreground">KTP:</span>
-                                  <span>{candidateDetails.profile.ktpNumber || "N/A"}</span>
+                                  <span>{selectedCandidate.details.profile.ktpNumber || "N/A"}</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <span className="text-muted-foreground">DOB:</span>
-                                  <span>{candidateDetails.profile.dateOfBirth || "N/A"}</span>
+                                  <span>{selectedCandidate.details.profile.dateOfBirth || "N/A"}</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <span className="text-muted-foreground">Address:</span>
-                                  <span>{candidateDetails.profile.address || "N/A"}</span>
+                                  <span>{selectedCandidate.details.profile.address || "N/A"}</span>
                                 </div>
-                                {candidateDetails.profile.cvFileName && (
+                                {selectedCandidate.details.profile.cvFileName && (
                                   <div className="flex items-center gap-2 mt-4">
                                     <FileText className="w-4 h-4 text-primary" />
-                                    <span className="text-primary">{candidateDetails.profile.cvFileName}</span>
+                                    <span className="text-primary">{selectedCandidate.details.profile.cvFileName}</span>
                                   </div>
                                 )}
                               </>
@@ -413,9 +509,9 @@ export default function AdminCandidatesPage() {
                     <TabsContent value="education" className="mt-4">
                       <Card>
                         <CardContent className="p-4">
-                          {candidateDetails?.education && candidateDetails.education.length > 0 ? (
+                          {selectedCandidate.details?.education && selectedCandidate.details.education.length > 0 ? (
                             <div className="space-y-4">
-                              {candidateDetails.education.map((edu) => (
+                              {selectedCandidate.details.education.map((edu) => (
                                 <div key={edu.id} className="flex gap-3">
                                   <GraduationCap className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                                   <div>
@@ -433,14 +529,14 @@ export default function AdminCandidatesPage() {
                           )}
                           
                           {/* Experience Section */}
-                          {candidateDetails?.experience && candidateDetails.experience.length > 0 && (
+                          {selectedCandidate.details?.experience && selectedCandidate.details.experience.length > 0 && (
                             <div className="mt-6 pt-4 border-t">
                               <h4 className="font-medium mb-3 flex items-center gap-2">
                                 <Briefcase className="w-4 h-4" />
                                 Work Experience
                               </h4>
                               <div className="space-y-4">
-                                {candidateDetails.experience.map((exp) => (
+                                {selectedCandidate.details.experience.map((exp) => (
                                   <div key={exp.id} className="flex gap-3">
                                     <div className="w-2 h-2 bg-primary rounded-full mt-2 shrink-0" />
                                     <div>
@@ -462,7 +558,7 @@ export default function AdminCandidatesPage() {
                     <TabsContent value="skills" className="mt-4">
                       <Card>
                         <CardContent className="p-4">
-                          {candidateDetails?.skills && candidateDetails.skills.length > 0 ? (
+                          {selectedCandidate.details?.skills && selectedCandidate.details.skills.length > 0 ? (
                             <div className="space-y-4">
                               <div>
                                 <h4 className="font-medium mb-2 flex items-center gap-2">
@@ -470,7 +566,7 @@ export default function AdminCandidatesPage() {
                                   Technical Skills
                                 </h4>
                                 <div className="flex flex-wrap gap-2">
-                                  {candidateDetails.skills.map((skill) => (
+                                  {selectedCandidate.details.skills.map((skill) => (
                                     <Badge key={skill.id} variant="secondary">
                                       {skill.skillName} ({skill.proficiencyLevel})
                                     </Badge>
@@ -483,14 +579,14 @@ export default function AdminCandidatesPage() {
                           )}
                           
                           {/* Training Section */}
-                          {candidateDetails?.trainings && candidateDetails.trainings.length > 0 && (
+                          {selectedCandidate.details?.trainings && selectedCandidate.details.trainings.length > 0 && (
                             <div className="mt-6 pt-4 border-t">
                               <h4 className="font-medium mb-3 flex items-center gap-2">
                                 <BookOpen className="w-4 h-4" />
                                 Training & Certifications
                               </h4>
                               <div className="space-y-2">
-                                {candidateDetails.trainings.map((training) => (
+                                {selectedCandidate.details.trainings.map((training) => (
                                   <div key={training.id} className="flex items-center justify-between p-2 bg-accent/50 rounded">
                                     <div>
                                       <p className="font-medium text-sm">{training.title}</p>
@@ -513,67 +609,36 @@ export default function AdminCandidatesPage() {
                         <CardHeader className="pb-2">
                           <CardTitle className="text-base flex items-center gap-2">
                             <Sparkles className="w-4 h-4" />
-                            ML Job Matching Analysis
+                            Job Matching Results
                           </CardTitle>
                         </CardHeader>
-                        <CardContent className="p-4">
+                        <CardContent>
                           {candidateJobMatches.length > 0 ? (
-                            <div className="space-y-4">
-                              {candidateJobMatches.slice(0, 5).map((match, idx) => (
-                                <div 
-                                  key={match.jobId} 
-                                  className={`p-3 rounded-lg border ${idx === 0 ? "border-primary bg-primary/5" : ""}`}
-                                  data-testid={`job-match-${match.jobId}`}
-                                >
-                                  <div className="flex items-center justify-between mb-2">
-                                    <div className="flex items-center gap-2">
-                                      {idx === 0 && <Badge variant="default">Best Match</Badge>}
-                                      <span className="font-medium">{match.jobTitle}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      <span className={`font-bold ${getMatchScoreColor(match.matchScore)}`}>
-                                        {match.matchScore}%
-                                      </span>
-                                      {match.isGoodFit && (
-                                        <Badge variant="default" className="bg-green-500">
-                                          Good Fit
-                                        </Badge>
-                                      )}
+                            <div className="space-y-3">
+                              {candidateJobMatches.slice(0, 5).map((match) => (
+                                <div key={match.jobId} className="flex items-center justify-between p-3 bg-accent/50 rounded-lg">
+                                  <div>
+                                    <p className="font-medium">{match.jobTitle}</p>
+                                    <div className="flex gap-2 mt-1 text-xs text-muted-foreground">
+                                      <span>Edu: {match.breakdown.educationScore}%</span>
+                                      <span>Skills: {match.breakdown.skillsScore}%</span>
+                                      <span>Exp: {match.breakdown.experienceScore}%</span>
                                     </div>
                                   </div>
-                                  <Progress value={match.matchScore} className="h-2 mb-3" />
-                                  <div className="grid grid-cols-2 gap-2 text-xs">
-                                    <div className="flex justify-between">
-                                      <span className="text-muted-foreground">Education:</span>
-                                      <span className={getMatchScoreColor(match.breakdown.educationScore)}>
-                                        {match.breakdown.educationScore}%
-                                      </span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span className="text-muted-foreground">Skills:</span>
-                                      <span className={getMatchScoreColor(match.breakdown.skillsScore)}>
-                                        {match.breakdown.skillsScore}%
-                                      </span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span className="text-muted-foreground">Experience:</span>
-                                      <span className={getMatchScoreColor(match.breakdown.experienceScore)}>
-                                        {match.breakdown.experienceScore}%
-                                      </span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span className="text-muted-foreground">Training:</span>
-                                      <span className={getMatchScoreColor(match.breakdown.trainingScore)}>
-                                        {match.breakdown.trainingScore}%
-                                      </span>
-                                    </div>
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant={getMatchBadgeVariant(match.matchScore)}>
+                                      {match.matchScore}%
+                                    </Badge>
+                                    {match.isGoodFit && (
+                                      <CheckCircle className="w-4 h-4 text-green-500" />
+                                    )}
                                   </div>
                                 </div>
                               ))}
                             </div>
                           ) : (
                             <p className="text-muted-foreground text-center py-4">
-                              No matching data available
+                              No matching data available. Candidate may need to complete their profile.
                             </p>
                           )}
                         </CardContent>
@@ -582,111 +647,216 @@ export default function AdminCandidatesPage() {
                   </Tabs>
                 </div>
 
-                {/* Right: Status & History */}
+                {/* Right: Assigned Jobs */}
                 <div className="space-y-4">
-                  {/* Current Status */}
                   <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base">Current Status</CardTitle>
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Briefcase className="w-4 h-4" />
+                        Assigned Positions ({selectedCandidate.applications.length})
+                      </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <Badge className={`${statusColors[selectedApp.status].bg} ${statusColors[selectedApp.status].text} text-sm px-3 py-1`}>
-                        {selectedApp.status}
-                      </Badge>
-                      
-                      {/* Status Actions */}
-                      {getStatusActions(selectedApp.status).length > 0 && (
-                        <div className="mt-4 space-y-2">
-                          <p className="text-sm text-muted-foreground">Change status to:</p>
-                          <div className="flex flex-wrap gap-2">
-                            {getStatusActions(selectedApp.status).map((status) => (
-                              <Button
-                                key={status}
-                                size="sm"
-                                variant={status === "Rejected" ? "destructive" : "outline"}
-                                onClick={() => setConfirmAction({ status, appId: selectedApp.id })}
-                                data-testid={`button-status-${status.toLowerCase().replace(/\s+/g, "-")}`}
-                              >
-                                {status === "Processing" && <Clock className="w-3 h-3 mr-1" />}
-                                {status === "Passed Selection" && <CheckCircle className="w-3 h-3 mr-1" />}
-                                {status === "Rejected" && <XCircle className="w-3 h-3 mr-1" />}
-                                {status}
-                              </Button>
-                            ))}
-                          </div>
+                      {selectedCandidate.applications.length > 0 ? (
+                        <div className="space-y-3">
+                          {selectedCandidate.applications.map((app) => {
+                            const nextStatuses = getNextStatuses(app.status as ApplicationStatus);
+                            return (
+                              <div key={app.id} className="p-3 rounded-lg border">
+                                <div className="flex items-center justify-between mb-2">
+                                  <p className="font-medium">{app.job?.title || "Unknown"}</p>
+                                  <Badge className={`${statusColors[app.status as ApplicationStatus].bg} ${statusColors[app.status as ApplicationStatus].text}`}>
+                                    {app.status}
+                                  </Badge>
+                                </div>
+                                <p className="text-xs text-muted-foreground mb-2">
+                                  Assigned: {new Date(app.appliedAt).toLocaleDateString()}
+                                </p>
+                                
+                                {/* History Timeline */}
+                                {applicationHistories.get(app.id) && applicationHistories.get(app.id)!.length > 0 && (
+                                  <div className="mb-3 pt-2 border-t">
+                                    <p className="text-xs font-medium mb-2 flex items-center gap-1">
+                                      <History className="w-3 h-3" />
+                                      Status History
+                                    </p>
+                                    <div className="space-y-1">
+                                      {applicationHistories.get(app.id)!.slice(0, 3).map((h) => (
+                                        <div key={h.id} className="flex items-center justify-between text-xs">
+                                          <span className="text-muted-foreground">
+                                            {new Date(h.timestamp).toLocaleDateString()} - {h.actor}
+                                          </span>
+                                          <Badge variant="outline" className="text-xs py-0">
+                                            {h.status}
+                                          </Badge>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                {nextStatuses.length > 0 && (
+                                  <div className="flex flex-wrap gap-2 pt-2 border-t">
+                                    {nextStatuses.map((status) => (
+                                      <Button
+                                        key={status}
+                                        size="sm"
+                                        variant={status === "Rejected" ? "destructive" : status === "Accepted" ? "default" : "outline"}
+                                        onClick={() => setConfirmStatusChange({ appId: app.id, status, jobTitle: app.job?.title || "Unknown" })}
+                                        disabled={isUpdatingStatus}
+                                        data-testid={`button-status-${status.toLowerCase().replace(" ", "-")}-${app.id}`}
+                                      >
+                                        {isUpdatingStatus ? (
+                                          <Loader2 className="w-3 h-3 animate-spin" />
+                                        ) : status === "Passed Selection" ? (
+                                          <>
+                                            <CheckCircle className="w-3 h-3 mr-1" />
+                                            Pass
+                                          </>
+                                        ) : status === "Rejected" ? (
+                                          <>
+                                            <XCircle className="w-3 h-3 mr-1" />
+                                            Reject
+                                          </>
+                                        ) : status === "Accepted" ? (
+                                          <>
+                                            <CheckCircle className="w-3 h-3 mr-1" />
+                                            Accept
+                                          </>
+                                        ) : (
+                                          <>
+                                            <Clock className="w-3 h-3 mr-1" />
+                                            {status}
+                                          </>
+                                        )}
+                                      </Button>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="text-center py-6">
+                          <AlertCircle className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                          <p className="text-muted-foreground text-sm">No jobs assigned yet</p>
                         </div>
                       )}
                     </CardContent>
                   </Card>
-
-                  {/* Application History */}
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base">Application History</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        {selectedApp.history && selectedApp.history.length > 0 ? (
-                          selectedApp.history
-                            .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-                            .map((hist, index) => (
-                              <div key={hist.id} className="flex gap-3">
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                                  index === 0 ? "bg-primary text-primary-foreground" : "bg-muted"
-                                }`}>
-                                  {hist.status === "Accepted" ? <CheckCircle className="w-4 h-4" /> :
-                                   hist.status === "Rejected" ? <XCircle className="w-4 h-4" /> :
-                                   <Clock className="w-4 h-4" />}
-                                </div>
-                                <div className="flex-1">
-                                  <div className="flex items-center justify-between">
-                                    <Badge className={`${statusColors[hist.status].bg} ${statusColors[hist.status].text} text-xs`}>
-                                      {hist.status}
-                                    </Badge>
-                                    <span className="text-xs text-muted-foreground">
-                                      {new Date(hist.timestamp).toLocaleString()}
-                                    </span>
-                                  </div>
-                                  <p className="text-xs text-muted-foreground mt-1">
-                                    By {hist.actor} ({hist.actorRole})
-                                  </p>
-                                </div>
-                              </div>
-                            ))
-                        ) : (
-                          <p className="text-muted-foreground text-center py-4">No history available</p>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
                 </div>
               </div>
+
+              <DialogFooter>
+                <Button
+                  onClick={() => {
+                    setShowAssignDialog(true);
+                  }}
+                  disabled={getAvailableJobs(selectedCandidate).length === 0}
+                >
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Assign to Job
+                </Button>
+              </DialogFooter>
             </>
           )}
         </DialogContent>
       </Dialog>
 
-      {/* Confirmation Dialog */}
-      <Dialog open={!!confirmAction} onOpenChange={() => setConfirmAction(null)}>
-        <DialogContent className="max-w-md">
+      {/* Assign Job Dialog */}
+      <Dialog open={showAssignDialog} onOpenChange={(open) => { 
+        setShowAssignDialog(open); 
+        if (!open) {
+          setSelectedJobForAssign("");
+        }
+      }}>
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>Confirm Status Change</DialogTitle>
+            <DialogTitle>Assign Job to Candidate</DialogTitle>
             <DialogDescription>
-              Are you sure you want to change the status to "{confirmAction?.status}"?
-              This action will be recorded in the application history.
+              Select a job position to assign to {selectedCandidate?.user.fullName}
             </DialogDescription>
           </DialogHeader>
+          
+          <div className="py-4">
+            <Select value={selectedJobForAssign} onValueChange={setSelectedJobForAssign}>
+              <SelectTrigger data-testid="select-job-assign">
+                <SelectValue placeholder="Select a job position" />
+              </SelectTrigger>
+              <SelectContent>
+                {selectedCandidate && getAvailableJobs(selectedCandidate).map((job) => {
+                  const match = candidateJobMatches.find(m => m.jobId === job.id);
+                  return (
+                    <SelectItem key={job.id} value={job.id}>
+                      <div className="flex items-center gap-2">
+                        <span>{job.title}</span>
+                        {match && (
+                          <Badge variant={getMatchBadgeVariant(match.matchScore)} className="ml-2">
+                            {match.matchScore}%
+                          </Badge>
+                        )}
+                      </div>
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          </div>
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmAction(null)}>
+            <Button variant="outline" onClick={() => setShowAssignDialog(false)}>
               Cancel
             </Button>
             <Button 
-              variant={confirmAction?.status === "Rejected" ? "destructive" : "default"}
-              onClick={() => confirmAction && handleStatusChange(confirmAction.appId, confirmAction.status)}
-              disabled={isUpdating}
-              data-testid="button-confirm-status"
+              onClick={handleAssignJob} 
+              disabled={!selectedJobForAssign || isAssigning}
+              data-testid="button-confirm-assign"
             >
-              {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : "Confirm"}
+              {isAssigning ? (
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Assigning...</>
+              ) : (
+                <>Assign Position</>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Status Update Confirmation Dialog */}
+      <Dialog open={!!confirmStatusChange} onOpenChange={(open) => { if (!open) setConfirmStatusChange(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Status Change</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to change the status to "{confirmStatusChange?.status}"?
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <div className="p-4 rounded-lg bg-accent/50">
+              <p className="font-medium">{confirmStatusChange?.jobTitle}</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                New Status: <Badge className={confirmStatusChange ? `${statusColors[confirmStatusChange.status].bg} ${statusColors[confirmStatusChange.status].text}` : ""}>{confirmStatusChange?.status}</Badge>
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmStatusChange(null)} disabled={isUpdatingStatus}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleConfirmStatusUpdate} 
+              disabled={isUpdatingStatus}
+              variant={confirmStatusChange?.status === "Rejected" ? "destructive" : "default"}
+              data-testid="button-confirm-status-change"
+            >
+              {isUpdatingStatus ? (
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Updating...</>
+              ) : (
+                <>Confirm</>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

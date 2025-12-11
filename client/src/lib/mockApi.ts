@@ -56,6 +56,11 @@ export const usersApi = {
     return users.map(u => ({ ...u, password: "" }));
   },
   
+  getAllCandidates: async (): Promise<User[]> => {
+    await delay(200);
+    return users.filter(u => u.role === "candidate").map(u => ({ ...u, password: "" }));
+  },
+  
   getById: async (id: string): Promise<User | undefined> => {
     await delay(100);
     const user = users.find(u => u.id === id);
@@ -550,6 +555,13 @@ export const applicationsApi = {
       return applications[index];
     }
     return undefined;
+  },
+  
+  getHistory: async (applicationId: string): Promise<ApplicationHistory[]> => {
+    await delay(100);
+    return applicationHistory
+      .filter(h => h.applicationId === applicationId)
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
   },
   
   getStats: async (): Promise<{

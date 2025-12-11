@@ -18,7 +18,7 @@ export function Chatbot({ isPanel = false, onClose }: ChatbotProps) {
     {
       id: "welcome",
       sender: "bot",
-      message: "Hello! I'm SmartHire's virtual assistant. I can help you with questions about applications, your profile, job searches, and more. How can I assist you today?",
+      message: "Hello! I'm SmartHire's virtual assistant. I can help you complete your profile and understand how our recruitment process works. SmartHire administrators will review your profile and match you with suitable job positions based on your qualifications. How can I assist you today?",
       timestamp: new Date().toISOString()
     }
   ]);
@@ -161,7 +161,7 @@ export function Chatbot({ isPanel = false, onClose }: ChatbotProps) {
           </Button>
         </div>
         <p className="text-xs text-muted-foreground mt-2 text-center">
-          Try asking about application status, how to apply, or updating your profile
+          Try asking about profile completion, application status, or how SmartHire works
         </p>
       </div>
     </>
