@@ -9,68 +9,35 @@ import {
   Briefcase, 
   Users, 
   Clock, 
-  Calendar,
   ArrowRight,
   Plus,
-  Building2,
-  User,
-  Video
+  Building2
 } from "lucide-react";
-import type { JobWithDetails, ApplicationWithDetails } from "@shared/schema";
-
-interface ScheduledInterview {
-  id: string;
-  candidateName: string;
-  jobTitle: string;
-  date: string;
-  time: string;
-  type: "video" | "in-person";
-}
+import type { JobWithDetails } from "@shared/schema";
 
 export default function AdminDashboard() {
   const [jobs, setJobs] = useState<JobWithDetails[]>([]);
-  const [applications, setApplications] = useState<ApplicationWithDetails[]>([]);
   const [stats, setStats] = useState<{
     total: number;
     pending: number;
-    interviews: number;
     byStatus: Record<string, number>;
   } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
-      const [jobsData, statsData, appsData] = await Promise.all([
+      const [jobsData, statsData] = await Promise.all([
         jobsApi.getAll(),
-        applicationsApi.getStats(),
-        applicationsApi.getAll()
+        applicationsApi.getStats()
       ]);
       setJobs(jobsData);
       setStats(statsData);
-      setApplications(appsData);
       setIsLoading(false);
     };
     loadData();
   }, []);
 
   const activeJobs = jobs.filter(j => j.status === "Active");
-
-  // Get candidates who passed selection (scheduled for interviews)
-  const interviewCandidates = applications.filter(app => app.status === "Passed Selection");
-
-  // Generate mock interview schedule from passed selection candidates
-  const scheduledInterviews: ScheduledInterview[] = interviewCandidates.slice(0, 5).map((app, index) => {
-    const baseDate = new Date();
-    baseDate.setDate(baseDate.getDate() + index + 1);
-    return {
-      id: app.id,
-      candidateName: app.candidate?.fullName || "Unknown Candidate",
-      jobTitle: app.job?.title || "Unknown Position",
-      date: baseDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-      time: `${9 + index}:00 AM`,
-      type: index % 2 === 0 ? "video" : "in-person"
-    };
-  });
 
   const summaryCards = [
     { 
@@ -93,13 +60,6 @@ export default function AdminDashboard() {
       icon: Clock,
       color: "text-yellow-600",
       bgColor: "bg-yellow-100 dark:bg-yellow-900/30"
-    },
-    { 
-      title: "Scheduled Interviews", 
-      value: interviewCandidates.length, 
-      icon: Calendar,
-      color: "text-green-600",
-      bgColor: "bg-green-100 dark:bg-green-900/30"
     }
   ];
 
@@ -142,7 +102,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         {summaryCards.map((card, index) => (
           <Card key={index} className="hover-elevate">
             <CardContent className="p-6">
@@ -158,9 +118,8 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      {/* Two Column Layout: Jobs & Interviews */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {/* Active Jobs */}
+      {/* Active Jobs */}
+      <div className="mb-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between gap-2">
             <CardTitle>Active Job Postings</CardTitle>
@@ -201,56 +160,6 @@ export default function AdminDashboard() {
                     <Badge className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 shrink-0">
                       Active
                     </Badge>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Upcoming Interviews */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between gap-2">
-            <CardTitle>Upcoming Interviews</CardTitle>
-            <Link href="/admin/candidates">
-              <Button variant="ghost" size="sm" className="gap-1" data-testid="link-view-all-interviews">
-                View Candidates
-                <ArrowRight className="w-4 h-4" />
-              </Button>
-            </Link>
-          </CardHeader>
-          <CardContent>
-            {scheduledInterviews.length === 0 ? (
-              <div className="text-center py-8">
-                <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground mb-2">No upcoming interviews</p>
-                <p className="text-sm text-muted-foreground">
-                  Candidates who pass selection will appear here for interview scheduling
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {scheduledInterviews.map((interview) => (
-                  <div 
-                    key={interview.id}
-                    className="flex items-center gap-4 p-4 rounded-lg bg-accent/50 hover-elevate"
-                    data-testid={`interview-${interview.id}`}
-                  >
-                    <div className="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center shrink-0">
-                      {interview.type === "video" ? (
-                        <Video className="w-5 h-5 text-green-600" />
-                      ) : (
-                        <User className="w-5 h-5 text-green-600" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium truncate">{interview.candidateName}</h4>
-                      <p className="text-sm text-muted-foreground truncate">{interview.jobTitle}</p>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-sm font-medium">{interview.date}</p>
-                      <p className="text-xs text-muted-foreground">{interview.time}</p>
-                    </div>
                   </div>
                 ))}
               </div>
