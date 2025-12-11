@@ -19,16 +19,88 @@ import type {
 export const demoUsers: User[] = [
   {
     id: "user-candidate-1",
-    email: "candidate@smarthire.com",
-    password: "password123",
+    email: "candidate1@smarthire.com",
+    password: "candidate123",
     fullName: "John Doe",
     phone: "+1234567890",
     role: "candidate"
   },
   {
+    id: "user-candidate-2",
+    email: "candidate2@smarthire.com",
+    password: "candidate123",
+    fullName: "Jane Smith",
+    phone: "+1987654321",
+    role: "candidate"
+  },
+  {
+    id: "user-candidate-3",
+    email: "candidate3@smarthire.com",
+    password: "candidate123",
+    fullName: "Bob Johnson",
+    phone: "+1555555555",
+    role: "candidate"
+  },
+  {
+    id: "user-candidate-4",
+    email: "candidate4@smarthire.com",
+    password: "candidate123",
+    fullName: "Alice Williams",
+    phone: "+1666666666",
+    role: "candidate"
+  },
+  {
+    id: "user-candidate-5",
+    email: "candidate5@smarthire.com",
+    password: "candidate123",
+    fullName: "Michael Brown",
+    phone: "+1777777777",
+    role: "candidate"
+  },
+  {
+    id: "user-candidate-6",
+    email: "candidate6@smarthire.com",
+    password: "candidate123",
+    fullName: "Emily Davis",
+    phone: "+1888888888",
+    role: "candidate"
+  },
+  {
+    id: "user-candidate-7",
+    email: "candidate7@smarthire.com",
+    password: "candidate123",
+    fullName: "David Wilson",
+    phone: "+1999999999",
+    role: "candidate"
+  },
+  {
+    id: "user-candidate-8",
+    email: "candidate8@smarthire.com",
+    password: "candidate123",
+    fullName: "Sarah Martinez",
+    phone: "+1444444444",
+    role: "candidate"
+  },
+  {
+    id: "user-candidate-9",
+    email: "candidate9@smarthire.com",
+    password: "candidate123",
+    fullName: "James Anderson",
+    phone: "+1333333333",
+    role: "candidate"
+  },
+  {
+    id: "user-candidate-10",
+    email: "candidate10@smarthire.com",
+    password: "candidate123",
+    fullName: "Lisa Taylor",
+    phone: "+1222222222",
+    role: "candidate"
+  },
+  {
     id: "user-admin-1",
     email: "admin@smarthire.com",
-    password: "password123",
+    password: "admin123",
     fullName: "Admin User",
     phone: "+1234567891",
     role: "admin"
@@ -36,26 +108,10 @@ export const demoUsers: User[] = [
   {
     id: "user-client-1",
     email: "client@smarthire.com",
-    password: "password123",
+    password: "client123",
     fullName: "Client User",
     phone: "+1234567892",
     role: "client"
-  },
-  {
-    id: "user-candidate-2",
-    email: "jane@example.com",
-    password: "password123",
-    fullName: "Jane Smith",
-    phone: "+1987654321",
-    role: "candidate"
-  },
-  {
-    id: "user-candidate-3",
-    email: "bob@example.com",
-    password: "password123",
-    fullName: "Bob Johnson",
-    phone: "+1555555555",
-    role: "candidate"
   }
 ];
 
@@ -132,10 +188,24 @@ export const demoJobs: Job[] = [
     requiredMajors: ["Marketing", "Business", "Communications"],
     optionalSkills: ["SEO", "Google Analytics", "Social Media", "Content Marketing"],
     salary: "$70,000 - $90,000",
-    closeDate: "2025-01-31",
+    closeDate: "2025-03-31",
     description: "Lead our digital marketing initiatives and grow our online presence.",
     criteria: "4+ years of digital marketing experience. Proven track record of successful campaigns.",
-    status: "Closed"
+    status: "Active"
+  },
+  {
+    id: "job-5",
+    title: "Financial Analyst",
+    departmentId: "dept-4",
+    positionId: "pos-6",
+    minEducation: "Bachelor",
+    requiredMajors: ["Finance", "Accounting", "Economics", "Business Administration"],
+    optionalSkills: ["Excel", "Financial Modeling", "Data Analysis", "SAP"],
+    salary: "$65,000 - $85,000",
+    closeDate: "2025-04-15",
+    description: "Analyze financial data and provide insights to support business decisions.",
+    criteria: "3+ years of financial analysis experience. Strong analytical and Excel skills.",
+    status: "Active"
   }
 ];
 
@@ -168,65 +238,149 @@ export const demoCandidateProfiles: CandidateProfile[] = [
     address: "456 Oak Avenue, Los Angeles, CA 90001",
     cvFileName: "jane_smith_cv.pdf",
     cvFileUrl: "/uploads/jane_smith_cv.pdf"
+  },
+  {
+    id: "profile-3",
+    userId: "user-candidate-3",
+    ktpNumber: "1111222233334444",
+    placeOfBirth: "Chicago",
+    dateOfBirth: "1988-03-10",
+    gender: "Male",
+    maritalStatus: "Single",
+    religion: "Protestant",
+    nationality: "American",
+    address: "789 Lake Drive, Chicago, IL 60601",
+    cvFileName: "bob_johnson_cv.pdf",
+    cvFileUrl: "/uploads/bob_johnson_cv.pdf"
+  },
+  {
+    id: "profile-4",
+    userId: "user-candidate-4",
+    ktpNumber: "5555666677778888",
+    placeOfBirth: "Houston",
+    dateOfBirth: "1995-11-25",
+    gender: "Female",
+    maritalStatus: "Single",
+    religion: "Buddhist",
+    nationality: "American",
+    address: "321 Texas Avenue, Houston, TX 77001",
+    cvFileName: "alice_williams_cv.pdf",
+    cvFileUrl: "/uploads/alice_williams_cv.pdf"
+  },
+  {
+    id: "profile-5",
+    userId: "user-candidate-5",
+    ktpNumber: "9999000011112222",
+    placeOfBirth: "Phoenix",
+    dateOfBirth: "1991-07-08",
+    gender: "Male",
+    maritalStatus: "Married",
+    religion: "Christian",
+    nationality: "American",
+    address: "654 Desert Road, Phoenix, AZ 85001",
+    cvFileName: "michael_brown_cv.pdf",
+    cvFileUrl: "/uploads/michael_brown_cv.pdf"
+  },
+  {
+    id: "profile-6",
+    userId: "user-candidate-6",
+    ktpNumber: "3333444455556666",
+    placeOfBirth: "Philadelphia",
+    dateOfBirth: "1993-02-14",
+    gender: "Female",
+    maritalStatus: "Single",
+    religion: "Jewish",
+    nationality: "American",
+    address: "987 Liberty Street, Philadelphia, PA 19101",
+    cvFileName: "emily_davis_cv.pdf",
+    cvFileUrl: "/uploads/emily_davis_cv.pdf"
+  },
+  {
+    id: "profile-7",
+    userId: "user-candidate-7",
+    ktpNumber: "7777888899990000",
+    placeOfBirth: "San Antonio",
+    dateOfBirth: "1989-09-30",
+    gender: "Male",
+    maritalStatus: "Married",
+    religion: "Catholic",
+    nationality: "American",
+    address: "246 River Walk, San Antonio, TX 78201",
+    cvFileName: "david_wilson_cv.pdf",
+    cvFileUrl: "/uploads/david_wilson_cv.pdf"
+  },
+  {
+    id: "profile-8",
+    userId: "user-candidate-8",
+    ktpNumber: "1212343456567878",
+    placeOfBirth: "San Diego",
+    dateOfBirth: "1994-06-18",
+    gender: "Female",
+    maritalStatus: "Single",
+    religion: "Hindu",
+    nationality: "American",
+    address: "135 Pacific Coast Highway, San Diego, CA 92101",
+    cvFileName: "sarah_martinez_cv.pdf",
+    cvFileUrl: "/uploads/sarah_martinez_cv.pdf"
+  },
+  {
+    id: "profile-9",
+    userId: "user-candidate-9",
+    ktpNumber: "9090808070706060",
+    placeOfBirth: "Dallas",
+    dateOfBirth: "1987-12-05",
+    gender: "Male",
+    maritalStatus: "Divorced",
+    religion: "Christian",
+    nationality: "American",
+    address: "468 Commerce Street, Dallas, TX 75201",
+    cvFileName: "james_anderson_cv.pdf",
+    cvFileUrl: "/uploads/james_anderson_cv.pdf"
+  },
+  {
+    id: "profile-10",
+    userId: "user-candidate-10",
+    ktpNumber: "5050404030302020",
+    placeOfBirth: "San Jose",
+    dateOfBirth: "1996-04-22",
+    gender: "Female",
+    maritalStatus: "Single",
+    religion: "Muslim",
+    nationality: "American",
+    address: "579 Silicon Valley Blvd, San Jose, CA 95101",
+    cvFileName: "lisa_taylor_cv.pdf",
+    cvFileUrl: "/uploads/lisa_taylor_cv.pdf"
   }
 ];
 
 // Education
 export const demoEducation: Education[] = [
-  {
-    id: "edu-1",
-    userId: "user-candidate-1",
-    level: "Bachelor",
-    schoolName: "MIT",
-    city: "Cambridge",
-    major: "Computer Science",
-    yearStart: 2008,
-    yearEnd: 2012
-  },
-  {
-    id: "edu-2",
-    userId: "user-candidate-1",
-    level: "Master",
-    schoolName: "Stanford University",
-    city: "Stanford",
-    major: "Software Engineering",
-    yearStart: 2012,
-    yearEnd: 2014
-  },
-  {
-    id: "edu-3",
-    userId: "user-candidate-2",
-    level: "Bachelor",
-    schoolName: "UCLA",
-    city: "Los Angeles",
-    major: "Information Technology",
-    yearStart: 2010,
-    yearEnd: 2014
-  }
+  { id: "edu-1", userId: "user-candidate-1", level: "Bachelor", schoolName: "MIT", city: "Cambridge", major: "Computer Science", yearStart: 2008, yearEnd: 2012 },
+  { id: "edu-2", userId: "user-candidate-1", level: "Master", schoolName: "Stanford University", city: "Stanford", major: "Software Engineering", yearStart: 2012, yearEnd: 2014 },
+  { id: "edu-3", userId: "user-candidate-2", level: "Bachelor", schoolName: "UCLA", city: "Los Angeles", major: "Information Technology", yearStart: 2010, yearEnd: 2014 },
+  { id: "edu-4", userId: "user-candidate-3", level: "Bachelor", schoolName: "University of Chicago", city: "Chicago", major: "Computer Science", yearStart: 2006, yearEnd: 2010 },
+  { id: "edu-5", userId: "user-candidate-4", level: "Bachelor", schoolName: "Rice University", city: "Houston", major: "Marketing", yearStart: 2013, yearEnd: 2017 },
+  { id: "edu-6", userId: "user-candidate-5", level: "Bachelor", schoolName: "Arizona State University", city: "Phoenix", major: "Finance", yearStart: 2009, yearEnd: 2013 },
+  { id: "edu-7", userId: "user-candidate-6", level: "Bachelor", schoolName: "University of Pennsylvania", city: "Philadelphia", major: "Human Resources", yearStart: 2011, yearEnd: 2015 },
+  { id: "edu-8", userId: "user-candidate-7", level: "Bachelor", schoolName: "University of Texas", city: "Austin", major: "Business Administration", yearStart: 2007, yearEnd: 2011 },
+  { id: "edu-9", userId: "user-candidate-8", level: "Bachelor", schoolName: "UC San Diego", city: "San Diego", major: "Computer Science", yearStart: 2012, yearEnd: 2016 },
+  { id: "edu-10", userId: "user-candidate-9", level: "Bachelor", schoolName: "Southern Methodist University", city: "Dallas", major: "Accounting", yearStart: 2005, yearEnd: 2009 },
+  { id: "edu-11", userId: "user-candidate-10", level: "Bachelor", schoolName: "San Jose State University", city: "San Jose", major: "Software Engineering", yearStart: 2014, yearEnd: 2018 }
 ];
 
 // Experience
 export const demoExperience: Experience[] = [
-  {
-    id: "exp-1",
-    userId: "user-candidate-1",
-    companyName: "Google",
-    position: "Software Engineer",
-    city: "Mountain View",
-    yearStart: 2014,
-    yearEnd: 2018,
-    description: "Developed and maintained large-scale web applications"
-  },
-  {
-    id: "exp-2",
-    userId: "user-candidate-1",
-    companyName: "Meta",
-    position: "Senior Developer",
-    city: "Menlo Park",
-    yearStart: 2018,
-    yearEnd: 2023,
-    description: "Led frontend development team for React-based projects"
-  }
+  { id: "exp-1", userId: "user-candidate-1", companyName: "Google", position: "Software Engineer", city: "Mountain View", yearStart: 2014, yearEnd: 2018, description: "Developed and maintained large-scale web applications" },
+  { id: "exp-2", userId: "user-candidate-1", companyName: "Meta", position: "Senior Developer", city: "Menlo Park", yearStart: 2018, yearEnd: 2023, description: "Led frontend development team for React-based projects" },
+  { id: "exp-3", userId: "user-candidate-2", companyName: "Amazon", position: "IT Specialist", city: "Seattle", yearStart: 2014, yearEnd: 2019, description: "Managed IT infrastructure and support" },
+  { id: "exp-4", userId: "user-candidate-3", companyName: "Microsoft", position: "Developer", city: "Redmond", yearStart: 2010, yearEnd: 2015, description: "Built enterprise software solutions" },
+  { id: "exp-5", userId: "user-candidate-4", companyName: "Nike", position: "Marketing Coordinator", city: "Portland", yearStart: 2017, yearEnd: 2021, description: "Managed digital marketing campaigns" },
+  { id: "exp-6", userId: "user-candidate-5", companyName: "JPMorgan", position: "Financial Analyst", city: "New York", yearStart: 2013, yearEnd: 2018, description: "Analyzed financial data and prepared reports" },
+  { id: "exp-7", userId: "user-candidate-6", companyName: "Deloitte", position: "HR Consultant", city: "Philadelphia", yearStart: 2015, yearEnd: 2020, description: "Provided HR consulting services to clients" },
+  { id: "exp-8", userId: "user-candidate-7", companyName: "IBM", position: "Project Manager", city: "Austin", yearStart: 2011, yearEnd: 2016, description: "Managed software development projects" },
+  { id: "exp-9", userId: "user-candidate-8", companyName: "Apple", position: "iOS Developer", city: "Cupertino", yearStart: 2016, yearEnd: 2021, description: "Developed mobile applications for iOS" },
+  { id: "exp-10", userId: "user-candidate-9", companyName: "EY", position: "Senior Accountant", city: "Dallas", yearStart: 2009, yearEnd: 2015, description: "Handled financial audits and accounting" },
+  { id: "exp-11", userId: "user-candidate-10", companyName: "Salesforce", position: "Junior Developer", city: "San Francisco", yearStart: 2018, yearEnd: 2022, description: "Built CRM integrations and features" }
 ];
 
 // Skills
@@ -236,14 +390,38 @@ export const demoSkills: Skill[] = [
   { id: "skill-3", userId: "user-candidate-1", skillName: "Node.js", proficiencyLevel: "Advanced" },
   { id: "skill-4", userId: "user-candidate-1", skillName: "TypeScript", proficiencyLevel: "Advanced" },
   { id: "skill-5", userId: "user-candidate-2", skillName: "Python", proficiencyLevel: "Intermediate" },
-  { id: "skill-6", userId: "user-candidate-2", skillName: "SQL", proficiencyLevel: "Advanced" }
+  { id: "skill-6", userId: "user-candidate-2", skillName: "SQL", proficiencyLevel: "Advanced" },
+  { id: "skill-7", userId: "user-candidate-3", skillName: "Java", proficiencyLevel: "Expert" },
+  { id: "skill-8", userId: "user-candidate-3", skillName: "C++", proficiencyLevel: "Advanced" },
+  { id: "skill-9", userId: "user-candidate-4", skillName: "SEO", proficiencyLevel: "Expert" },
+  { id: "skill-10", userId: "user-candidate-4", skillName: "Google Analytics", proficiencyLevel: "Advanced" },
+  { id: "skill-11", userId: "user-candidate-5", skillName: "Excel", proficiencyLevel: "Expert" },
+  { id: "skill-12", userId: "user-candidate-5", skillName: "Financial Modeling", proficiencyLevel: "Advanced" },
+  { id: "skill-13", userId: "user-candidate-6", skillName: "Recruiting", proficiencyLevel: "Expert" },
+  { id: "skill-14", userId: "user-candidate-6", skillName: "HRIS Systems", proficiencyLevel: "Advanced" },
+  { id: "skill-15", userId: "user-candidate-7", skillName: "Project Management", proficiencyLevel: "Expert" },
+  { id: "skill-16", userId: "user-candidate-7", skillName: "Agile", proficiencyLevel: "Advanced" },
+  { id: "skill-17", userId: "user-candidate-8", skillName: "Swift", proficiencyLevel: "Expert" },
+  { id: "skill-18", userId: "user-candidate-8", skillName: "React Native", proficiencyLevel: "Advanced" },
+  { id: "skill-19", userId: "user-candidate-9", skillName: "SAP", proficiencyLevel: "Expert" },
+  { id: "skill-20", userId: "user-candidate-9", skillName: "Data Analysis", proficiencyLevel: "Advanced" },
+  { id: "skill-21", userId: "user-candidate-10", skillName: "React", proficiencyLevel: "Advanced" },
+  { id: "skill-22", userId: "user-candidate-10", skillName: "TypeScript", proficiencyLevel: "Intermediate" }
 ];
 
 // Trainings
 export const demoTrainings: Training[] = [
   { id: "train-1", userId: "user-candidate-1", title: "AWS Certified Developer", organizer: "Amazon Web Services", year: 2020 },
   { id: "train-2", userId: "user-candidate-1", title: "React Advanced Patterns", organizer: "Frontend Masters", year: 2021 },
-  { id: "train-3", userId: "user-candidate-2", title: "Data Science Bootcamp", organizer: "Coursera", year: 2022 }
+  { id: "train-3", userId: "user-candidate-2", title: "Data Science Bootcamp", organizer: "Coursera", year: 2022 },
+  { id: "train-4", userId: "user-candidate-3", title: "Azure Fundamentals", organizer: "Microsoft", year: 2019 },
+  { id: "train-5", userId: "user-candidate-4", title: "Digital Marketing Certification", organizer: "Google", year: 2020 },
+  { id: "train-6", userId: "user-candidate-5", title: "CFA Level 1", organizer: "CFA Institute", year: 2018 },
+  { id: "train-7", userId: "user-candidate-6", title: "SHRM-CP Certification", organizer: "SHRM", year: 2019 },
+  { id: "train-8", userId: "user-candidate-7", title: "PMP Certification", organizer: "PMI", year: 2017 },
+  { id: "train-9", userId: "user-candidate-8", title: "iOS Development Bootcamp", organizer: "Udacity", year: 2020 },
+  { id: "train-10", userId: "user-candidate-9", title: "CPA Certification", organizer: "AICPA", year: 2014 },
+  { id: "train-11", userId: "user-candidate-10", title: "Full Stack Web Development", organizer: "Codecademy", year: 2021 }
 ];
 
 // Languages
